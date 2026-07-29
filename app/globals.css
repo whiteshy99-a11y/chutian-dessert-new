@@ -31,5 +31,26 @@ footer{text-align:center;background:var(--deep);color:#f7ede5;padding:45px;line-
 @media(max-width:900px){.hero-photo{grid-template-columns:1fr}.hero-photo>img{max-height:520px}.product-grid-photo{grid-template-columns:repeat(2,1fr)}.custom-info{grid-template-columns:1fr 1fr}.custom-notice{grid-column:1/-1}}
 @media(max-width:560px){.hero-photo>img{max-height:430px;border-radius:18px}.product-grid-photo{grid-template-columns:1fr}.custom-gallery{grid-template-columns:repeat(2,1fr);gap:10px}.custom-info{grid-template-columns:1fr}.custom-notice{grid-column:auto}.product-body{padding:18px}}
 
-/* LINE 官方帳號入口 */
-.bank-line-link,.result-line-link{display:inline-flex;align-items:center;justify-content:center;margin-top:12px;padding:10px 14px;border-radius:999px;background:#06c755;color:#fff!important;font-weight:800;text-decoration:none}.result-line-link{margin-top:4px}.line-float{white-space:nowrap}
+/* 初甜趣正式品牌視覺：日系 × 韓系，奶茶與淡咖 */
+:root{--cream:#fbf7f1;--milk:#f2e8dc;--coffee:#8b684f;--deep:#4b3a31;--rose:#cda995;--line:#e5d6c8}
+body{background:var(--cream)}
+header{background:rgba(251,247,241,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.brand img{width:118px;height:58px;object-fit:contain;display:block}
+.hero-logo{width:min(250px,65%);height:auto;margin:0 0 24px;display:block}
+.logo-mark{background:#f4eadf;border-radius:36px;width:min(360px,100%);height:auto;aspect-ratio:1.3/1;overflow:hidden;padding:18px;box-shadow:0 20px 55px #72553f22}
+.logo-mark img{width:100%;height:100%;object-fit:contain;border-radius:22px}
+footer img{width:150px;height:auto;border-radius:12px;margin-bottom:12px}
+.cake-carousel{position:relative;width:100%;min-height:520px;border-radius:30px;overflow:hidden;background:#eadfd4;box-shadow:0 30px 70px #76544333}
+.cake-carousel>img{width:100%;height:620px;object-fit:cover;display:block;animation:carouselFade .5s ease}
+@keyframes carouselFade{from{opacity:.35;transform:scale(1.01)}to{opacity:1;transform:scale(1)}}
+.carousel-caption{position:absolute;left:20px;right:20px;bottom:20px;padding:14px 18px;border-radius:16px;background:#fffaf3df;backdrop-filter:blur(10px);display:flex;justify-content:space-between;align-items:center;color:#513b2f;font-weight:800}
+.carousel-caption small{font-weight:600;opacity:.65}
+.carousel-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:46px;height:46px;border:0;border-radius:50%;background:#fffaf0db;color:#6d4d3a;font-size:34px;line-height:1;cursor:pointer;box-shadow:0 5px 18px #0002}
+.carousel-arrow.prev{left:16px}.carousel-arrow.next{right:16px}
+.carousel-dots{position:absolute;left:50%;transform:translateX(-50%);bottom:84px;z-index:2;display:flex;gap:6px;max-width:75%;flex-wrap:wrap;justify-content:center}
+.carousel-dots button{width:7px;height:7px;padding:0;border:0;border-radius:50%;background:#fff8;cursor:pointer}.carousel-dots button.on{width:22px;border-radius:99px;background:#fff}
+.line-float::before{content:"LINE";font-size:11px;background:#fff;color:#06c755;border-radius:50%;width:28px;height:28px;display:grid;place-items:center;margin-right:8px;font-weight:900}.line-float{display:flex;align-items:center}
+@media(max-width:900px){.cake-carousel{min-height:420px}.cake-carousel>img{height:520px}.brand img{width:104px}}
+@media(max-width:560px){.hero-logo{width:190px}.cake-carousel{min-height:360px;border-radius:20px}.cake-carousel>img{height:430px}.carousel-caption{left:12px;right:12px;bottom:12px}.carousel-dots{bottom:75px}.carousel-arrow{width:38px;height:38px;font-size:28px}.brand img{width:92px;height:52px}footer img{width:130px}}
+
+.line-inline{display:inline-flex;align-items:center;justify-content:center;margin-top:12px;padding:11px 16px;border-radius:999px;background:#06c755;color:#fff!important;font-weight:800;text-decoration:none!important;box-shadow:0 6px 18px #06c75533}.line-inline:hover{filter:brightness(.96)}

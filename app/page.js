@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 
 const monthNames = {7:"7 月",8:"8 月",9:"9 月",10:"10 月",11:"11 月",12:"12 月"};
-const OFFICIAL_LINE_URL = "https://line.me/R/ti/p/@563shriq";
 
 const PRODUCTS = [
   {id:"fruit-basque",name:"水果焦香巴斯克",image:"/products/fruit-basque.jpeg",sizes:[{label:"6 吋",price:780}],ingredients:["焦香巴斯克乳酪蛋糕","當季新鮮水果","香緹鮮奶油"]},
@@ -27,7 +26,7 @@ const PRODUCTS = [
 
 const defaultSettings = {
   closedDates:["2026-08-19"], limitedDates:[], bankName:"連線商業銀行", bankCode:"824", bankAccount:"111018312187",
-  bankNote:"匯款完成後，請加入 LINE 官方帳號並提供訂購人姓名與帳號後五碼。", lineUrl:OFFICIAL_LINE_URL, serviceHours:"每日 10:00–20:00", announcement:"",
+  bankNote:"匯款完成後，請加入 LINE 官方帳號並提供訂購人姓名與帳號後五碼。", lineUrl:"https://line.me/R/ti/p/@563shriq", serviceHours:"每日 10:00–20:00", announcement:"",
   mapUrl:"https://www.google.com/maps/search/?api=1&query=高雄市鳳山區經武路353之1號", reviewUrl:""
 };
 
@@ -44,45 +43,57 @@ function Calendar({month, settings, selected, onSelect}) {
   })}</div></div>
 }
 
-function ProductCard({p,onChoose,lineUrl}){
+function CakeCarousel({items}){
+  const [index,setIndex]=useState(0);
+  const current=items[index];
+  useEffect(()=>{const t=setInterval(()=>setIndex(i=>(i+1)%items.length),4200);return()=>clearInterval(t)},[items.length]);
+  return <div className="cake-carousel">
+    <button className="carousel-arrow prev" aria-label="上一張" onClick={()=>setIndex(i=>(i-1+items.length)%items.length)}>‹</button>
+    <img src={current.image} alt={current.name}/>
+    <div className="carousel-caption"><span>{current.name}</span><small>{index+1} / {items.length}</small></div>
+    <button className="carousel-arrow next" aria-label="下一張" onClick={()=>setIndex(i=>(i+1)%items.length)}>›</button>
+    <div className="carousel-dots">{items.map((x,i)=><button key={x.id} className={i===index?"on":""} aria-label={`顯示 ${x.name}`} onClick={()=>setIndex(i)}/>)}</div>
+  </div>
+}
+
+function ProductCard({p,onChoose}){
   return <article className="product-card">
     <div className="product-photo"><img src={p.image} alt={p.name}/>{p.vegetarian&&<span className="veg-tag">蛋奶素</span>}</div>
     <div className="product-body"><h3>{p.name}</h3><p className="price-line">{priceText(p)}</p><ul>{p.ingredients.map(x=><li key={x}>{x}</li>)}</ul>
-    {p.custom?<a className="product-action" href={lineUrl} target="_blank" rel="noreferrer">前往 LINE 討論 →</a>:<button className="product-action" onClick={()=>onChoose(p.id)}>選擇此品項 →</button>}</div>
+    {p.custom?<a className="product-action" href="#contact">前往 LINE 討論 →</a>:<button className="product-action" onClick={()=>onChoose(p.id)}>選擇此品項 →</button>}</div>
   </article>
 }
 
 export default function Home(){
   const [month,setMonth]=useState(7),[settings,setSettings]=useState(defaultSettings),[selected,setSelected]=useState(""),[productId,setProductId]=useState(""),[payment,setPayment]=useState("cash"),[open,setOpen]=useState(false),[sending,setSending]=useState(false),[message,setMessage]=useState(""),[orderId,setOrderId]=useState("");
   const selectedProduct=useMemo(()=>PRODUCTS.find(p=>p.id===productId),[productId]);
-  const lineUrl = settings.lineUrl || OFFICIAL_LINE_URL;
   useEffect(()=>{fetch("/api/settings").then(r=>r.json()).then(d=>setSettings({...defaultSettings,...d})).catch(()=>{});},[]);
   function chooseDate(key){setSelected(key);setOpen(true);setMessage("");setOrderId("")}
   function chooseProduct(id){setProductId(id);document.querySelector("#calendar")?.scrollIntoView({behavior:"smooth"})}
   async function submit(e){e.preventDefault();const form=e.currentTarget;setSending(true);setMessage("");setOrderId("");const data=Object.fromEntries(new FormData(form).entries());try{const r=await fetch("/api/order",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...data,product:selectedProduct?.name||data.product,date:selected,paymentMethod:payment})});const result=await r.json();if(!r.ok)throw new Error(result.error||"送出失敗");setOrderId(result.orderId||"");setMessage("訂購資料已送達初甜趣！店家會再透過 LINE 或電話與你確認，確認後訂單才正式成立。");form.reset();setProductId("");setPayment("cash")}catch(err){setMessage(err instanceof Error?err.message:"訂單送出失敗，請稍後再試。") }finally{setSending(false)}}
 
   return <>
-    <header><a className="brand" href="#top"><span>✿ 初甜趣</span><small>HANDMADE DESSERT · SINCE 2026</small></a><nav><a href="#calendar">可訂日期</a><a href="#products">商品</a><a href="#custom">客製蛋糕</a><a href="#about">品牌故事</a><a href="#contact">聯絡我們</a></nav></header>
+    <header><a className="brand" href="#top"><img src="/chutian-logo.png" alt="初甜趣 Chutian Bake"/></a><nav><a href="#calendar">可訂日期</a><a href="#products">商品</a><a href="#custom">客製蛋糕</a><a href="#about">品牌故事</a><a href="#contact">聯絡我們</a></nav></header>
     <main id="top">
       {settings.announcement&&<div className="announcement">📢 {settings.announcement}</div>}
-      <section className="hero hero-photo"><div className="hero-copy"><p className="eyebrow">CHUTIAN BAKE · KAOHSIUNG</p><h1>每一口，<br/>都是手作的溫度。</h1><p className="lead">動物性鮮奶油、新鮮水果、日本進口麵粉與減糖配方。</p><a className="primary" href="#products">瀏覽商品 →</a><p className="note">奶油不甜膩，是客人最常給初甜趣的回饋。</p></div><img src="/products/fruit-season.jpeg" alt="初甜趣水果季蛋糕"/></section>
+      <section className="hero hero-photo"><div className="hero-copy"><img className="hero-logo" src="/chutian-logo.png" alt="初甜趣 Chutian Bake Logo"/><p className="eyebrow">CHUTIAN BAKE · KAOHSIUNG</p><h1>每一口，<br/>都是手作的溫度。</h1><p className="lead">動物性鮮奶油、新鮮水果、日本進口麵粉與減糖配方。</p><a className="primary" href="#products">瀏覽商品 →</a><p className="note">奶油不甜膩，是客人最常給初甜趣的回饋。</p></div><CakeCarousel items={PRODUCTS.filter(p=>!p.custom)}/></section>
 
       <section id="calendar" className="section calendar-section"><p className="eyebrow">AVAILABLE DATES</p><h2>選擇取貨日期</h2><div className="months">{Object.keys(monthNames).map(m=><button key={m} className={month===Number(m)?"on":""} onClick={()=>setMonth(Number(m))}>{monthNames[m]}</button>)}</div><Calendar month={month} settings={settings} selected={selected} onSelect={chooseDate}/><div className="legend"><span><i className="dot open"/>可預訂</span><span><i className="dot limited"/>剩少量</span><span><i className="dot closed"/>已滿單</span></div><p className="hint">點選可預訂日期填寫訂購資料；灰色日期無法選擇。</p></section>
 
       <section className="features">{[["♨","動物性鮮奶油","不使用植物性鮮奶油"],["♧","嚴選食材","新鮮水果與日本進口麵粉"],["♢","減糖配方","保留食材原本的香氣"],["♡","小量手作","依訂單製作每一顆蛋糕"]].map(x=><article key={x[1]}><b>{x[0]}</b><h3>{x[1]}</h3><p>{x[2]}</p></article>)}</section>
 
-      <section id="products" className="section products"><p className="eyebrow">OUR DESSERTS</p><h2>商品一覽</h2><p>商品頁單純呈現照片、尺寸、價格與實際內容物。</p><div className="product-grid product-grid-photo">{PRODUCTS.filter(p=>!p.custom).map(p=><ProductCard key={p.id} p={p} onChoose={chooseProduct} lineUrl={lineUrl}/>)}</div></section>
+      <section id="products" className="section products"><p className="eyebrow">OUR DESSERTS</p><h2>商品一覽</h2><p>全部蛋糕會在首頁輪播展示，商品卡呈現照片、尺寸、價格與實際內容物。</p><div className="product-grid product-grid-photo">{PRODUCTS.filter(p=>!p.custom).map(p=><ProductCard key={p.id} p={p} onChoose={chooseProduct}/>)}</div></section>
 
-      <section id="custom" className="section custom-section"><p className="eyebrow">CUSTOM CAKES</p><h2>客製公仔蛋糕</h2><p>公仔、道具與主題細節皆透過官方 LINE 討論。</p><div className="custom-gallery">{PRODUCTS.find(p=>p.custom).gallery.map((src,i)=><img src={src} alt={`初甜趣客製公仔蛋糕作品 ${i+1}`} key={src}/>)}</div><div className="custom-info"><div><h3>含公仔／道具</h3><p>6 吋｜NT$1,250 起</p><p>8 吋｜NT$1,550 起</p></div><div><h3>公仔自備</h3><p>6 吋｜NT$880</p><p>8 吋｜NT$1,280</p></div><div className="custom-notice"><strong>客製道具需提前 14～30 個工作天預訂</strong><p>造型、配色、文字與報價請先透過官方 LINE 確認。</p></div></div><a className="primary" href={lineUrl} target="_blank" rel="noreferrer">加入 LINE 討論客製蛋糕 →</a></section>
+      <section id="custom" className="section custom-section"><p className="eyebrow">CUSTOM CAKES</p><h2>客製公仔蛋糕</h2><p>公仔、道具與主題細節皆透過官方 LINE 討論。</p><div className="custom-gallery">{PRODUCTS.find(p=>p.custom).gallery.map((src,i)=><img src={src} alt={`初甜趣客製公仔蛋糕作品 ${i+1}`} key={src}/>)}</div><div className="custom-info"><div><h3>含公仔／道具</h3><p>6 吋｜NT$1,250 起</p><p>8 吋｜NT$1,550 起</p></div><div><h3>公仔自備</h3><p>6 吋｜NT$880</p><p>8 吋｜NT$1,280</p></div><div className="custom-notice"><strong>客製道具需提前 14～30 個工作天預訂</strong><p>造型、配色、文字與報價請先透過官方 LINE 確認。</p></div></div>{settings.lineUrl&&<a className="primary" href={settings.lineUrl} target="_blank" rel="noreferrer">加入 LINE 討論主題 →</a>}</section>
 
-      <section id="about" className="about"><div className="logo-mark">✿<strong>初甜趣</strong><small>HANDMADE DESSERT</small></div><div><p className="eyebrow">ABOUT CHUTIAN</p><h2>奶油不甜膩，<br/>是我們的招牌。</h2><p>客人常說：「甜而不膩」、「奶油很綿密」、「奶香很濃郁」、「蛋糕體濕潤」。</p><p>初甜趣堅持使用動物性鮮奶油、不使用植物性鮮奶油，搭配新鮮水果、日本進口麵粉、嚴選茶粉與天然食材，以減糖配方完成每一份甜點。</p></div></section>
+      <section id="about" className="about"><div className="logo-mark"><img src="/chutian-logo.png" alt="初甜趣 Chutian Bake"/></div><div><p className="eyebrow">ABOUT CHUTIAN</p><h2>奶油不甜膩，<br/>是我們的招牌。</h2><p>客人常說：「甜而不膩」、「奶油很綿密」、「奶香很濃郁」、「蛋糕體濕潤」。</p><p>初甜趣堅持使用動物性鮮奶油、不使用植物性鮮奶油，搭配新鮮水果、日本進口麵粉、嚴選茶粉與天然食材，以減糖配方完成每一份甜點。</p></div></section>
 
       <section className="section faq" id="faq"><p className="eyebrow">ORDER INFORMATION</p><h2>訂購與取貨</h2><div className="faq-grid"><details><summary>取貨方式</summary><p>以門市自取為主。若有需要，可協助安排 Lalamove 配送，運費由顧客自行負擔。</p></details><details><summary>送出表單就代表訂單成立嗎？</summary><p>尚未。須由初甜趣透過 LINE 或電話確認後，訂單才正式成立。</p></details><details><summary>客製蛋糕多久前預訂？</summary><p>客製道具需至少提前 14～30 個工作天預訂，並先透過官方 LINE 討論。</p></details><details><summary>付款方式</summary><p>可選擇銀行轉帳或取貨當天現金付款。</p></details></div></section>
 
-      <section id="contact" className="contact"><p className="eyebrow">CONTACT US</p><h2>把重要的日子，<br/>交給甜甜的我們。</h2><p><a href="tel:0976172288">0976-172-288</a>　高雄市鳳山區經武路353之1號</p><p className="service-hours">客服回覆時間：{settings.serviceHours}</p><p className="delivery-note">門市自取｜可協助安排 Lalamove，運費由顧客負擔</p><div className="contact-actions"><a className="primary" href="#calendar">查看可訂日期 →</a><a className="secondary" href={lineUrl} target="_blank" rel="noreferrer">LINE 客服</a>{settings.mapUrl&&<a className="secondary" href={settings.mapUrl} target="_blank" rel="noreferrer">Google 地圖導航</a>}</div></section>
+      <section id="contact" className="contact"><p className="eyebrow">CONTACT US</p><h2>把重要的日子，<br/>交給甜甜的我們。</h2><p><a href="tel:0976172288">0976-172-288</a>　高雄市鳳山區經武路353之1號</p><p className="service-hours">客服回覆時間：{settings.serviceHours}</p><p className="delivery-note">門市自取｜可協助安排 Lalamove，運費由顧客負擔</p><div className="contact-actions"><a className="primary" href="#calendar">查看可訂日期 →</a>{settings.lineUrl&&<a className="secondary" href={settings.lineUrl} target="_blank" rel="noreferrer">LINE 客服</a>}{settings.mapUrl&&<a className="secondary" href={settings.mapUrl} target="_blank" rel="noreferrer">Google 地圖導航</a>}</div></section>
     </main>
-    <footer>✿ 初甜趣 HANDMADE DESSERT · SINCE 2026<br/><small>© 2026 Chutian Bake. All Rights Reserved.</small></footer>
-    <a className="line-float" href={lineUrl} target="_blank" rel="noreferrer" aria-label="加入初甜趣 LINE 官方帳號">LINE 客服</a>
+    <footer><img src="/chutian-logo.png" alt="初甜趣 Chutian Bake"/><br/><small>© 2026 Chutian Bake. All Rights Reserved.</small></footer>
+    {settings.lineUrl&&<a className="line-float" href={settings.lineUrl} target="_blank" rel="noreferrer">LINE 客服</a>}
 
     {open&&<div className="modal" onMouseDown={e=>{if(e.target===e.currentTarget)setOpen(false)}}><div className="dialog"><button className="x" onClick={()=>setOpen(false)}>×</button><p className="eyebrow">ORDER FORM</p><h2>填寫訂購資料</h2><p className="selected-date">取貨日期：{selected}</p><form onSubmit={submit}>
       <label>訂購品項<select name="product" value={productId} onChange={e=>setProductId(e.target.value)} required><option value="">請選擇</option>{PRODUCTS.filter(p=>!p.custom).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
@@ -91,8 +102,8 @@ export default function Home(){
       <div className="two"><label>用途<select name="occasion"><option>生日</option><option>彌月</option><option>節慶</option><option>公司活動</option><option>其他</option></select></label></div>
       <div className="two"><label>姓名<input name="name" required/></label><label>電話<input name="phone" inputMode="tel" required/></label></div><label>LINE 顯示名稱<input name="lineName" placeholder="方便店家核對聯絡"/></label>
       <fieldset className="payment-box"><legend>付款方式</legend><label className="pay-option"><input type="radio" name="paymentMethod" value="cash" checked={payment==="cash"} onChange={()=>setPayment("cash")}/>現場付款（現金）</label><label className="pay-option"><input type="radio" name="paymentMethod" value="bank" checked={payment==="bank"} onChange={()=>setPayment("bank")}/>銀行匯款</label></fieldset>
-      {payment==="bank"&&<div className="bank-card"><h3>銀行匯款資訊</h3><p><b>銀行：</b>{settings.bankName}</p><p><b>代碼：</b>{settings.bankCode}</p><p><b>帳號：</b>{settings.bankAccount}</p><button type="button" className="copy-bank" onClick={()=>navigator.clipboard?.writeText(settings.bankAccount)}>複製帳號</button><small>{settings.bankNote}</small><a className="bank-line-link" href={lineUrl} target="_blank" rel="noreferrer">加入 LINE 提供帳號後五碼 →</a></div>}
-      <label>蛋糕文字／蠟燭／盤叉／其他備註<textarea name="note" rows="4"/></label><label className="agree"><input type="checkbox" required/>我了解送出後仍須由店家確認，才算正式成立訂單。</label><button className="primary submit" disabled={sending}>{sending?"傳送中…":"送出訂單"}</button>{message&&<div className="result"><p>{message}</p>{orderId&&<p><b>訂單編號：{orderId}</b></p>}<a className="result-line-link" href={lineUrl} target="_blank" rel="noreferrer">加入 LINE 官方帳號 →</a></div>}
+      {payment==="bank"&&<div className="bank-card"><h3>銀行匯款資訊</h3><p><b>銀行：</b>{settings.bankName}</p><p><b>代碼：</b>{settings.bankCode}</p><p><b>帳號：</b>{settings.bankAccount}</p><button type="button" className="copy-bank" onClick={()=>navigator.clipboard?.writeText(settings.bankAccount)}>複製帳號</button><small>{settings.bankNote}</small>{settings.lineUrl&&<a className="line-inline" href={settings.lineUrl} target="_blank" rel="noreferrer">加入 LINE 官方帳號，提供匯款後五碼 →</a>}</div>}
+      <label>蛋糕文字／蠟燭／盤叉／其他備註<textarea name="note" rows="4"/></label><label className="agree"><input type="checkbox" required/>我了解送出後仍須由店家確認，才算正式成立訂單。</label><button className="primary submit" disabled={sending}>{sending?"傳送中…":"送出訂單"}</button>{message&&<div className="result"><p>{message}</p>{orderId&&<p><b>訂單編號：{orderId}</b></p>}{settings.lineUrl&&<a className="line-inline" href={settings.lineUrl} target="_blank" rel="noreferrer">加入 LINE 官方帳號 →</a>}</div>}
     </form></div></div>}
   </>
 }

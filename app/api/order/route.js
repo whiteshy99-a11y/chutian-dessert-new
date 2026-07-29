@@ -1,6 +1,21 @@
 import { NextResponse } from "next/server";
 import { saveOrder } from "../../../lib/orders";
 
+
+async function getLineAdminUserId(){
+  const direct = String(process.env.LINE_ADMIN_USER_ID || "").replace(/\s+/g, "").trim();
+  if (direct) return direct;
+  const url = String(process.env.UPSTASH_REDIS_REST_URL || "").trim().replace(/\/+$/, "");
+  const redisToken = String(process.env.UPSTASH_REDIS_REST_TOKEN || "").trim();
+  if (!url || !redisToken) return "";
+  try {
+    const response = await fetch(`${url}/get/${encodeURIComponent("chutian:line-admin-user-id")}`, { headers:{ Authorization:`Bearer ${redisToken}` }, cache:"no-store" });
+    if (!response.ok) return "";
+    const result = await response.json();
+    return String(result?.result || "").trim();
+  } catch { return ""; }
+}
+
 function createOrderId(){
   const now = new Date();
   const parts = new Intl.DateTimeFormat("en-CA", { timeZone:"Asia/Taipei", year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false }).formatToParts(now);
@@ -15,14 +30,14 @@ export async function POST(req) {
     for (const key of required) if (!String(data[key] || "").trim()) return NextResponse.json({ error: "請完整填寫所有必填欄位。" }, { status: 400 });
 
     const token = String(process.env.LINE_CHANNEL_ACCESS_TOKEN || "").replace(/\s+/g, "").trim();
-    const to = String(process.env.LINE_ADMIN_USER_ID || "").replace(/\s+/g, "").trim();
+    const to = await getLineAdminUserId();
     if (!token) return NextResponse.json({ error: "網站尚未設定 LINE Token。" }, { status: 500 });
-    if (!to) return NextResponse.json({ error: "網站尚未設定 LINE 收件人 User ID。" }, { status: 500 });
+    if (!to) return NextResponse.json({ error: "店家 LINE 尚未綁定。請先在官方 LINE 聊天室輸入「綁定店家」。" }, { status: 500 });
 
     const orderId = createOrderId();
     const paymentLabel = data.paymentMethod === "bank" ? "銀行匯款（待確認）" : "現場付款（現金）";
     const text = [
-      "🎂 初甜趣｜網站新訂單","────────────",`訂單編號：${orderId}`,`取貨日期：${String(data.date).trim()}`,`取貨時間：${String(data.pickupTime).trim()}`,`品項：${String(data.product).trim()}`,`尺寸：${String(data.size).trim()}`,`用途：${String(data.occasion || "未填").trim() || "未填"}`,`享用人數：${String(data.people || "未填").trim() || "未填"}`,`付款方式：${paymentLabel}`,`姓名：${String(data.name).trim()}`,`電話：${String(data.phone).trim()}`,`LINE 名稱：${String(data.lineName || "未填").trim() || "未填"}`,`備註：${String(data.note || "無").trim() || "無"}`,"────────────","請盡快與客人確認，確認後訂單才正式成立。"
+      "🎂 初甜趣｜網站新訂單","────────────",`訂單編號：${orderId}`,`取貨日期：${String(data.date).trim()}`,`取貨時間：${String(data.pickupTime).trim()}`,`品項：${String(data.product).trim()}`,`尺寸：${String(data.size).trim()}`,`用途：${String(data.occasion || "未填").trim() || "未填"}`,`付款方式：${paymentLabel}`,`姓名：${String(data.name).trim()}`,`電話：${String(data.phone).trim()}`,`LINE 名稱：${String(data.lineName || "未填").trim() || "未填"}`,`備註：${String(data.note || "無").trim() || "無"}`,"────────────","請盡快與客人確認，確認後訂單才正式成立。"
     ].join("\n");
 
     const order = {
@@ -32,7 +47,6 @@ export async function POST(req) {
       product: String(data.product).trim(),
       size: String(data.size).trim(),
       occasion: String(data.occasion || "").trim(),
-      people: String(data.people || "").trim(),
       paymentMethod: data.paymentMethod,
       paymentLabel,
       name: String(data.name).trim(),
