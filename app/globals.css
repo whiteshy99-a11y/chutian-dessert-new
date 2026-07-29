@@ -54,3 +54,16 @@ footer img{width:150px;height:auto;border-radius:12px;margin-bottom:12px}
 @media(max-width:560px){.hero-logo{width:190px}.cake-carousel{min-height:360px;border-radius:20px}.cake-carousel>img{height:430px}.carousel-caption{left:12px;right:12px;bottom:12px}.carousel-dots{bottom:75px}.carousel-arrow{width:38px;height:38px;font-size:28px}.brand img{width:92px;height:52px}footer img{width:130px}}
 
 .line-inline{display:inline-flex;align-items:center;justify-content:center;margin-top:12px;padding:11px 16px;border-radius:999px;background:#06c755;color:#fff!important;font-weight:800;text-decoration:none!important;box-shadow:0 6px 18px #06c75533}.line-inline:hover{filter:brightness(.96)}
+
+/* 2026-07-29 final requested corrections */
+.brand-text{display:flex;flex-direction:column;align-items:flex-start;text-decoration:none;color:var(--deep);line-height:1.15}
+.brand-title{font-family:Georgia,"Noto Serif TC","Times New Roman",serif;font-size:25px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
+.brand-subtitle{font-size:10px;font-weight:700;letter-spacing:.22em;margin-top:7px;white-space:nowrap}
+.hero-fixed-photo{width:100%;display:flex;align-items:center;justify-content:center}
+.hero-fixed-photo img{display:block;width:100%;height:auto;max-height:620px;object-fit:contain;border-radius:28px;box-shadow:0 30px 70px #76544333}
+.about-brand{justify-content:center;align-items:center;width:min(360px,100%);min-height:240px;padding:30px;border-radius:36px;background:#f4eadf;box-shadow:0 20px 55px #72553f22}
+.about-brand .brand-title{font-size:38px}.about-brand .brand-subtitle{font-size:11px}
+.footer-brand{align-items:center;margin-bottom:14px}.footer-brand .brand-title{font-size:28px}
+html{scroll-behavior:smooth}
+@media(max-width:900px){.hero-fixed-photo img{max-height:520px}.brand-title{font-size:22px}.brand-subtitle{font-size:9px}}
+@media(max-width:560px){.hero-fixed-photo img{max-height:none;border-radius:18px}.brand-title{font-size:20px}.brand-subtitle{font-size:8px;letter-spacing:.16em}.about-brand .brand-title{font-size:30px}}

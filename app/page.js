@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 const monthNames = {7:"7 月",8:"8 月",9:"9 月",10:"10 月",11:"11 月",12:"12 月"};
 
 const PRODUCTS = [
-  {id:"fruit-basque",name:"水果焦香巴斯克",image:"/products/fruit-basque.jpeg",sizes:[{label:"6 吋",price:780}],ingredients:["焦香巴斯克乳酪蛋糕","當季新鮮水果","香緹鮮奶油"]},
+  {id:"fruit-basque",name:"水果焦香巴斯克",vegetarian:true,image:"/products/fruit-basque.jpeg",sizes:[{label:"6 吋",price:780}],ingredients:["焦香巴斯克乳酪蛋糕","當季新鮮水果","香緹鮮奶油"]},
   {id:"fruit-season",name:"水果季（依季節搭配）",vegetarian:true,image:"/products/fruit-season.jpeg",sizes:[{label:"6 吋",price:850},{label:"8 吋",price:1250}],ingredients:["原味戚風蛋糕","當季新鮮水果","滑嫩布丁","香草外交官"]},
   {id:"blueberry-forest",name:"藍莓森林",vegetarian:true,image:"/products/blueberry-forest.jpeg",sizes:[{label:"6 吋",price:780},{label:"8 吋",price:1180}],ingredients:["巧克力戚風蛋糕","手熬藍莓果醬","滑嫩布丁"]},
   {id:"summer-mango",name:"夏日芒果",vegetarian:true,image:"/products/summer-mango.jpeg",sizes:[{label:"6 吋",price:850},{label:"8 吋",price:1250}],ingredients:["原味戚風蛋糕","香草外交官醬","手熬草莓果醬","滑嫩布丁"]},
@@ -43,19 +43,6 @@ function Calendar({month, settings, selected, onSelect}) {
   })}</div></div>
 }
 
-function CakeCarousel({items}){
-  const [index,setIndex]=useState(0);
-  const current=items[index];
-  useEffect(()=>{const t=setInterval(()=>setIndex(i=>(i+1)%items.length),4200);return()=>clearInterval(t)},[items.length]);
-  return <div className="cake-carousel">
-    <button className="carousel-arrow prev" aria-label="上一張" onClick={()=>setIndex(i=>(i-1+items.length)%items.length)}>‹</button>
-    <img src={current.image} alt={current.name}/>
-    <div className="carousel-caption"><span>{current.name}</span><small>{index+1} / {items.length}</small></div>
-    <button className="carousel-arrow next" aria-label="下一張" onClick={()=>setIndex(i=>(i+1)%items.length)}>›</button>
-    <div className="carousel-dots">{items.map((x,i)=><button key={x.id} className={i===index?"on":""} aria-label={`顯示 ${x.name}`} onClick={()=>setIndex(i)}/>)}</div>
-  </div>
-}
-
 function ProductCard({p,onChoose}){
   return <article className="product-card">
     <div className="product-photo"><img src={p.image} alt={p.name}/>{p.vegetarian&&<span className="veg-tag">蛋奶素</span>}</div>
@@ -73,26 +60,26 @@ export default function Home(){
   async function submit(e){e.preventDefault();const form=e.currentTarget;setSending(true);setMessage("");setOrderId("");const data=Object.fromEntries(new FormData(form).entries());try{const r=await fetch("/api/order",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...data,product:selectedProduct?.name||data.product,date:selected,paymentMethod:payment})});const result=await r.json();if(!r.ok)throw new Error(result.error||"送出失敗");setOrderId(result.orderId||"");setMessage("訂購資料已送達初甜趣！店家會再透過 LINE 或電話與你確認，確認後訂單才正式成立。");form.reset();setProductId("");setPayment("cash")}catch(err){setMessage(err instanceof Error?err.message:"訂單送出失敗，請稍後再試。") }finally{setSending(false)}}
 
   return <>
-    <header><a className="brand" href="#top"><img src="/chutian-logo.png" alt="初甜趣 Chutian Bake"/></a><nav><a href="#calendar">可訂日期</a><a href="#products">商品</a><a href="#custom">客製蛋糕</a><a href="#about">品牌故事</a><a href="#contact">聯絡我們</a></nav></header>
+    <header><a className="brand brand-text" href="#top"><span className="brand-title">✿ 初甜趣</span><span className="brand-subtitle">HANDMADE DESSERT · SINCE 2026</span></a><nav><a href="#calendar">可訂日期</a><a href="#products">商品</a><a href="#custom">客製蛋糕</a><a href="#about">品牌故事</a><a href="#contact">聯絡我們</a></nav></header>
     <main id="top">
       {settings.announcement&&<div className="announcement">📢 {settings.announcement}</div>}
-      <section className="hero hero-photo"><div className="hero-copy"><img className="hero-logo" src="/chutian-logo.png" alt="初甜趣 Chutian Bake Logo"/><p className="eyebrow">CHUTIAN BAKE · KAOHSIUNG</p><h1>每一口，<br/>都是手作的溫度。</h1><p className="lead">動物性鮮奶油、新鮮水果、日本進口麵粉與減糖配方。</p><a className="primary" href="#products">瀏覽商品 →</a><p className="note">奶油不甜膩，是客人最常給初甜趣的回饋。</p></div><CakeCarousel items={PRODUCTS.filter(p=>!p.custom)}/></section>
+      <section className="hero hero-photo"><div className="hero-copy"><p className="eyebrow">CHUTIAN BAKE · KAOHSIUNG</p><h1>每一口，<br/>都是手作的溫度。</h1><p className="lead">動物性鮮奶油、新鮮水果、日本進口麵粉與減糖配方。</p><a className="primary" href="#products">瀏覽商品 →</a><p className="note">奶油不甜膩，是客人最常給初甜趣的回饋。</p></div><div className="hero-fixed-photo"><img src="/products/fruit-season.jpeg" alt="水果季蛋糕"/></div></section>
 
       <section id="calendar" className="section calendar-section"><p className="eyebrow">AVAILABLE DATES</p><h2>選擇取貨日期</h2><div className="months">{Object.keys(monthNames).map(m=><button key={m} className={month===Number(m)?"on":""} onClick={()=>setMonth(Number(m))}>{monthNames[m]}</button>)}</div><Calendar month={month} settings={settings} selected={selected} onSelect={chooseDate}/><div className="legend"><span><i className="dot open"/>可預訂</span><span><i className="dot limited"/>剩少量</span><span><i className="dot closed"/>已滿單</span></div><p className="hint">點選可預訂日期填寫訂購資料；灰色日期無法選擇。</p></section>
 
       <section className="features">{[["♨","動物性鮮奶油","不使用植物性鮮奶油"],["♧","嚴選食材","新鮮水果與日本進口麵粉"],["♢","減糖配方","保留食材原本的香氣"],["♡","小量手作","依訂單製作每一顆蛋糕"]].map(x=><article key={x[1]}><b>{x[0]}</b><h3>{x[1]}</h3><p>{x[2]}</p></article>)}</section>
 
-      <section id="products" className="section products"><p className="eyebrow">OUR DESSERTS</p><h2>商品一覽</h2><p>全部蛋糕會在首頁輪播展示，商品卡呈現照片、尺寸、價格與實際內容物。</p><div className="product-grid product-grid-photo">{PRODUCTS.filter(p=>!p.custom).map(p=><ProductCard key={p.id} p={p} onChoose={chooseProduct}/>)}</div></section>
+      <section id="products" className="section products"><p className="eyebrow">OUR DESSERTS</p><h2>商品一覽</h2><p>商品卡呈現照片、尺寸、價格與實際內容物。</p><div className="product-grid product-grid-photo">{PRODUCTS.filter(p=>!p.custom).map(p=><ProductCard key={p.id} p={p} onChoose={chooseProduct}/>)}</div></section>
 
       <section id="custom" className="section custom-section"><p className="eyebrow">CUSTOM CAKES</p><h2>客製公仔蛋糕</h2><p>公仔、道具與主題細節皆透過官方 LINE 討論。</p><div className="custom-gallery">{PRODUCTS.find(p=>p.custom).gallery.map((src,i)=><img src={src} alt={`初甜趣客製公仔蛋糕作品 ${i+1}`} key={src}/>)}</div><div className="custom-info"><div><h3>含公仔／道具</h3><p>6 吋｜NT$1,250 起</p><p>8 吋｜NT$1,550 起</p></div><div><h3>公仔自備</h3><p>6 吋｜NT$880</p><p>8 吋｜NT$1,280</p></div><div className="custom-notice"><strong>客製道具需提前 14～30 個工作天預訂</strong><p>造型、配色、文字與報價請先透過官方 LINE 確認。</p></div></div>{settings.lineUrl&&<a className="primary" href={settings.lineUrl} target="_blank" rel="noreferrer">加入 LINE 討論主題 →</a>}</section>
 
-      <section id="about" className="about"><div className="logo-mark"><img src="/chutian-logo.png" alt="初甜趣 Chutian Bake"/></div><div><p className="eyebrow">ABOUT CHUTIAN</p><h2>奶油不甜膩，<br/>是我們的招牌。</h2><p>客人常說：「甜而不膩」、「奶油很綿密」、「奶香很濃郁」、「蛋糕體濕潤」。</p><p>初甜趣堅持使用動物性鮮奶油、不使用植物性鮮奶油，搭配新鮮水果、日本進口麵粉、嚴選茶粉與天然食材，以減糖配方完成每一份甜點。</p></div></section>
+      <section id="about" className="about"><div className="logo-mark brand-text about-brand"><span className="brand-title">✿ 初甜趣</span><span className="brand-subtitle">HANDMADE DESSERT · SINCE 2026</span></div><div><p className="eyebrow">ABOUT CHUTIAN</p><h2>奶油不甜膩，<br/>是我們的招牌。</h2><p>客人常說：「甜而不膩」、「奶油很綿密」、「奶香很濃郁」、「蛋糕體濕潤」。</p><p>初甜趣堅持使用動物性鮮奶油、不使用植物性鮮奶油，搭配新鮮水果、日本進口麵粉、嚴選茶粉與天然食材，以減糖配方完成每一份甜點。</p></div></section>
 
       <section className="section faq" id="faq"><p className="eyebrow">ORDER INFORMATION</p><h2>訂購與取貨</h2><div className="faq-grid"><details><summary>取貨方式</summary><p>以門市自取為主。若有需要，可協助安排 Lalamove 配送，運費由顧客自行負擔。</p></details><details><summary>送出表單就代表訂單成立嗎？</summary><p>尚未。須由初甜趣透過 LINE 或電話確認後，訂單才正式成立。</p></details><details><summary>客製蛋糕多久前預訂？</summary><p>客製道具需至少提前 14～30 個工作天預訂，並先透過官方 LINE 討論。</p></details><details><summary>付款方式</summary><p>可選擇銀行轉帳或取貨當天現金付款。</p></details></div></section>
 
       <section id="contact" className="contact"><p className="eyebrow">CONTACT US</p><h2>把重要的日子，<br/>交給甜甜的我們。</h2><p><a href="tel:0976172288">0976-172-288</a>　高雄市鳳山區經武路353之1號</p><p className="service-hours">客服回覆時間：{settings.serviceHours}</p><p className="delivery-note">門市自取｜可協助安排 Lalamove，運費由顧客負擔</p><div className="contact-actions"><a className="primary" href="#calendar">查看可訂日期 →</a>{settings.lineUrl&&<a className="secondary" href={settings.lineUrl} target="_blank" rel="noreferrer">LINE 客服</a>}{settings.mapUrl&&<a className="secondary" href={settings.mapUrl} target="_blank" rel="noreferrer">Google 地圖導航</a>}</div></section>
     </main>
-    <footer><img src="/chutian-logo.png" alt="初甜趣 Chutian Bake"/><br/><small>© 2026 Chutian Bake. All Rights Reserved.</small></footer>
+    <footer><div className="brand-text footer-brand"><span className="brand-title">✿ 初甜趣</span><span className="brand-subtitle">HANDMADE DESSERT · SINCE 2026</span></div><small>© 2026 Chutian Bake. All Rights Reserved.</small></footer>
     {settings.lineUrl&&<a className="line-float" href={settings.lineUrl} target="_blank" rel="noreferrer">LINE 客服</a>}
 
     {open&&<div className="modal" onMouseDown={e=>{if(e.target===e.currentTarget)setOpen(false)}}><div className="dialog"><button className="x" onClick={()=>setOpen(false)}>×</button><p className="eyebrow">ORDER FORM</p><h2>填寫訂購資料</h2><p className="selected-date">取貨日期：{selected}</p><form onSubmit={submit}>
