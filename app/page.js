@@ -26,7 +26,7 @@ const PRODUCTS = [
 
 const defaultSettings = {
   closedDates:["2026-08-19"], limitedDates:[], bankName:"連線商業銀行", bankCode:"824", bankAccount:"111018312187",
-  bankNote:"匯款完成後，請加入 LINE 官方帳號並提供訂購人姓名與帳號後五碼。", lineUrl:"https://line.me/R/ti/p/@563shriq", serviceHours:"每日 10:00–20:00", announcement:"",
+  bankNote:"送出訂單後，請加入 LINE 客服並上傳付款截圖，經店家確認後訂單才會成立。", lineUrl:"https://line.me/R/ti/p/@563shriq", serviceHours:"每日 10:00–20:00", announcement:"",
   mapUrl:"https://www.google.com/maps/search/?api=1&query=高雄市鳳山區經武路353之1號", reviewUrl:""
 };
 
@@ -52,12 +52,12 @@ function ProductCard({p,onChoose}){
 }
 
 export default function Home(){
-  const [month,setMonth]=useState(7),[settings,setSettings]=useState(defaultSettings),[selected,setSelected]=useState(""),[productId,setProductId]=useState(""),[payment,setPayment]=useState("cash"),[open,setOpen]=useState(false),[sending,setSending]=useState(false),[message,setMessage]=useState(""),[orderId,setOrderId]=useState("");
+  const [month,setMonth]=useState(7),[settings,setSettings]=useState(defaultSettings),[selected,setSelected]=useState(""),[productId,setProductId]=useState(""),[open,setOpen]=useState(false),[sending,setSending]=useState(false),[message,setMessage]=useState(""),[orderId,setOrderId]=useState("");
   const selectedProduct=useMemo(()=>PRODUCTS.find(p=>p.id===productId),[productId]);
   useEffect(()=>{fetch("/api/settings").then(r=>r.json()).then(d=>setSettings({...defaultSettings,...d})).catch(()=>{});},[]);
   function chooseDate(key){setSelected(key);setOpen(true);setMessage("");setOrderId("")}
   function chooseProduct(id){setProductId(id);document.querySelector("#calendar")?.scrollIntoView({behavior:"smooth"})}
-  async function submit(e){e.preventDefault();const form=e.currentTarget;setSending(true);setMessage("");setOrderId("");const data=Object.fromEntries(new FormData(form).entries());try{const r=await fetch("/api/order",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...data,product:selectedProduct?.name||data.product,date:selected,paymentMethod:payment})});const result=await r.json();if(!r.ok)throw new Error(result.error||"送出失敗");setOrderId(result.orderId||"");setMessage("訂單已送出。請加入 LINE 客服，傳送訂單編號並上傳付款截圖；經店家確認款項後，訂單才正式成立。訂單不設匯款期限，也不會自動取消。");form.reset();setProductId("");setPayment("cash")}catch(err){setMessage(err instanceof Error?err.message:"訂單送出失敗，請稍後再試。") }finally{setSending(false)}}
+  async function submit(e){e.preventDefault();const form=e.currentTarget;setSending(true);setMessage("");setOrderId("");const data=Object.fromEntries(new FormData(form).entries());try{const r=await fetch("/api/order",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...data,product:selectedProduct?.name||data.product,date:selected,paymentMethod:"bank"})});const result=await r.json();if(!r.ok)throw new Error(result.error||"送出失敗");setOrderId(result.orderId||"");form.reset();setProductId("")}catch(err){setMessage(err instanceof Error?err.message:"訂單送出失敗，請稍後再試。") }finally{setSending(false)}}
 
   return <>
     <header><a className="brand brand-text" href="#top"><span className="brand-title">✿ 初甜趣</span><span className="brand-subtitle">HANDMADE DESSERT · SINCE 2026</span></a><nav><a href="#calendar">可訂日期</a><a href="#products">商品</a><a href="#custom">客製蛋糕</a><a href="#about">品牌故事</a><a href="#contact">聯絡我們</a></nav></header>
@@ -75,22 +75,22 @@ export default function Home(){
 
       <section id="about" className="about"><div className="logo-mark brand-text about-brand"><span className="brand-title">✿ 初甜趣</span><span className="brand-subtitle">HANDMADE DESSERT · SINCE 2026</span></div><div><p className="eyebrow">ABOUT CHUTIAN</p><h2>奶油不甜膩，<br/>是我們的招牌。</h2><p>客人常說：「甜而不膩」、「奶油很綿密」、「奶香很濃郁」、「蛋糕體濕潤」。</p><p>初甜趣堅持使用動物性鮮奶油、不使用植物性鮮奶油，搭配新鮮水果、日本進口麵粉、嚴選茶粉與天然食材，以減糖配方完成每一份甜點。</p></div></section>
 
-      <section className="section faq" id="faq"><p className="eyebrow">ORDER INFORMATION</p><h2>訂購與取貨</h2><div className="faq-grid"><details><summary>取貨方式</summary><p>以門市自取為主。若有需要，可協助安排 Lalamove 配送，運費由顧客自行負擔。</p></details><details><summary>送出表單就代表訂單成立嗎？</summary><p>送出訂單加入 LINE 客服，上傳付款截圖，經店家確認後才會成立訂單。</p></details><details><summary>客製蛋糕多久前預訂？</summary><p>客製道具需至少提前 14～30 個工作天預訂，並先透過官方 LINE 討論。</p></details><details><summary>付款方式</summary><p>銀行轉帳匯款</p></details></div></section>
+      <section className="section faq" id="faq"><p className="eyebrow">ORDER INFORMATION</p><h2>訂購與取貨</h2><div className="faq-grid"><details><summary>取貨方式</summary><p>以門市自取為主。若有需要，可協助安排 Lalamove 配送，運費由顧客自行負擔。</p></details><details><summary>送出表單就代表訂單成立嗎？</summary><p>送出訂單後，請加入 LINE 客服並上傳付款截圖，經店家確認後訂單才會成立。</p></details><details><summary>客製蛋糕多久前預訂？</summary><p>客製道具需至少提前 14～30 個工作天預訂，並先透過官方 LINE 討論。</p></details><details><summary>付款方式</summary><p>銀行轉帳匯款</p></details></div></section>
 
       <section id="contact" className="contact"><p className="eyebrow">CONTACT US</p><h2>把重要的日子，<br/>交給甜甜的我們。</h2><p><a href="tel:0976172288">0976-172-288</a>　高雄市鳳山區經武路353之1號</p><p className="service-hours">客服回覆時間：{settings.serviceHours}</p><p className="delivery-note">門市自取｜可協助安排 Lalamove，運費由顧客負擔</p><div className="contact-actions"><a className="primary" href="#calendar">查看可訂日期 →</a>{settings.lineUrl&&<a className="secondary" href={settings.lineUrl} target="_blank" rel="noreferrer">LINE 客服</a>}{settings.mapUrl&&<a className="secondary" href={settings.mapUrl} target="_blank" rel="noreferrer">Google 地圖導航</a>}</div></section>
     </main>
     <footer><div className="brand-text footer-brand"><span className="brand-title">✿ 初甜趣</span><span className="brand-subtitle">HANDMADE DESSERT · SINCE 2026</span></div><small>© 2026 Chutian Bake. All Rights Reserved.</small></footer>
     {settings.lineUrl&&<a className="line-float" href={settings.lineUrl} target="_blank" rel="noreferrer">LINE 客服</a>}
 
-    {open&&<div className="modal" onMouseDown={e=>{if(e.target===e.currentTarget)setOpen(false)}}><div className="dialog"><button className="x" onClick={()=>setOpen(false)}>×</button><p className="eyebrow">ORDER FORM</p><h2>填寫訂購資料</h2><p className="selected-date">取貨日期：{selected}</p><form onSubmit={submit}>
+    {open&&<div className="modal" onMouseDown={e=>{if(e.target===e.currentTarget)setOpen(false)}}><div className="dialog"><button className="x" onClick={()=>setOpen(false)}>×</button>{orderId?<div className="order-success"><p className="success-icon">✓</p><p className="eyebrow">ORDER RECEIVED</p><h2>訂單已送出</h2><p>您的訂單資料已收到，請完成以下步驟。</p><div className="order-number"><span>訂單編號</span><strong>{orderId}</strong></div><div className="success-steps"><p><b>1.</b> 加入 LINE 官方帳號</p><p><b>2.</b> 提供訂單編號及匯款截圖</p><p><b>3.</b> 經店家確認款項後，訂單才正式成立</p></div><div className="success-reminder"><b>提醒您</b><br/>請截圖或記下訂單編號，方便店家核對。</div>{settings.lineUrl&&<a className="line-success" href={settings.lineUrl} target="_blank" rel="noreferrer">加入 LINE 官方帳號 →</a>}</div>:<><p className="eyebrow">ORDER FORM</p><h2>填寫訂購資料</h2><p className="selected-date">取貨日期：{selected}</p><form onSubmit={submit}>
       <label>訂購品項<select name="product" value={productId} onChange={e=>setProductId(e.target.value)} required><option value="">請選擇</option>{PRODUCTS.filter(p=>!p.custom).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
       <div className="two"><label>尺寸<select name="size" required><option value="">請選擇</option>{selectedProduct?.sizes.map(s=><option key={s.label} value={s.label}>{s.label}｜{money(s.price)}{s.suffix?` ${s.suffix}`:""}</option>)}</select></label><label>取貨時間<input name="pickupTime" type="time" required/></label></div>
       <input type="hidden" name="productName" value={selectedProduct?.name||""}/>
       <div className="two"><label>用途<select name="occasion"><option>生日</option><option>彌月</option><option>節慶</option><option>公司活動</option><option>其他</option></select></label></div>
       <div className="two"><label>姓名<input name="name" required/></label><label>電話<input name="phone" inputMode="tel" required/></label></div><label>LINE 顯示名稱<input name="lineName" placeholder="方便店家核對聯絡"/></label>
-      <fieldset className="payment-box"><legend>付款方式</legend><label className="pay-option"><input type="radio" name="paymentMethod" value="cash" checked={payment==="cash"} onChange={()=>setPayment("cash")}/>現場付款（現金）</label><label className="pay-option"><input type="radio" name="paymentMethod" value="bank" checked={payment==="bank"} onChange={()=>setPayment("bank")}/>銀行匯款</label></fieldset>
-      {payment==="bank"&&<div className="bank-card"><h3>銀行匯款資訊</h3><p><b>銀行：</b>{settings.bankName}</p><p><b>代碼：</b>{settings.bankCode}</p><p><b>帳號：</b>{settings.bankAccount}</p><button type="button" className="copy-bank" onClick={()=>navigator.clipboard?.writeText(settings.bankAccount)}>複製帳號</button><small>{settings.bankNote}</small>{settings.lineUrl&&<a className="line-inline" href={settings.lineUrl} target="_blank" rel="noreferrer">加入 LINE 官方帳號，提供匯款後五碼 →</a>}</div>}
-      <label>蛋糕文字／蠟燭／盤叉／其他備註<textarea name="note" rows="4"/></label><label className="agree"><input type="checkbox" required/>我了解送出後仍須由店家確認，才算正式成立訂單。</label><button className="primary submit" disabled={sending}>{sending?"傳送中…":"送出訂單"}</button>{message&&<div className="result"><p>{message}</p>{orderId&&<p><b>訂單編號：{orderId}</b></p>}{settings.lineUrl&&<a className="line-inline" href={settings.lineUrl} target="_blank" rel="noreferrer">加入 LINE 官方帳號 →</a>}</div>}
-    </form></div></div>}
+      <div className="payment-summary"><span>付款方式</span><strong>銀行匯款</strong></div>
+      <div className="bank-card"><h3>銀行匯款資訊</h3><p><b>銀行：</b>{settings.bankName}</p><p><b>代碼：</b>{settings.bankCode}</p><p><b>帳號：</b>{settings.bankAccount}</p><button type="button" className="copy-bank" onClick={()=>navigator.clipboard?.writeText(settings.bankAccount)}>複製帳號</button><small>送出訂單後，請加入 LINE 客服並上傳付款截圖，經店家確認後訂單才會成立。</small></div>
+      <label>蛋糕文字／蠟燭／盤叉／其他備註<textarea name="note" rows="4"/></label><label className="agree"><input type="checkbox" required/>我了解送出後仍須由店家確認，才算正式成立訂單。</label>{message&&<div className="form-error">{message}</div>}<button className="primary submit" disabled={sending}>{sending?"傳送中…":"送出訂單"}</button>
+    </form></>}</div></div>}
   </>
 }
