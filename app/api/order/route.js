@@ -1,80 +1,33 @@
 import { NextResponse } from "next/server";
-import { saveOrder } from "../../../lib/orders";
+import { nextOrderId, saveOrder } from "../../../lib/orders";
 
-
+function clean(value){return String(value || "").replace(/\s+/g, "").trim()}
 async function getLineAdminUserId(){
-  const direct = String(process.env.LINE_ADMIN_USER_ID || "").replace(/\s+/g, "").trim();
+  const direct = clean(process.env.LINE_ADMIN_USER_ID);
   if (direct) return direct;
   const url = String(process.env.UPSTASH_REDIS_REST_URL || "").trim().replace(/\/+$/, "");
   const redisToken = String(process.env.UPSTASH_REDIS_REST_TOKEN || "").trim();
   if (!url || !redisToken) return "";
-  try {
-    const response = await fetch(`${url}/get/${encodeURIComponent("chutian:line-admin-user-id")}`, { headers:{ Authorization:`Bearer ${redisToken}` }, cache:"no-store" });
-    if (!response.ok) return "";
-    const result = await response.json();
-    return String(result?.result || "").trim();
-  } catch { return ""; }
-}
-
-function createOrderId(){
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone:"Asia/Taipei", year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false }).formatToParts(now);
-  const v = Object.fromEntries(parts.map(p=>[p.type,p.value]));
-  return `CT${v.year}${v.month}${v.day}${v.hour}${v.minute}${v.second}`;
+  try { const r=await fetch(`${url}/get/${encodeURIComponent("chutian:line-admin-user-id")}`,{headers:{Authorization:`Bearer ${redisToken}`},cache:"no-store"}); const j=await r.json(); return String(j?.result||"").trim(); } catch { return ""; }
 }
 
 export async function POST(req) {
   try {
     const data = await req.json();
-    const required = ["date", "product", "size", "pickupTime", "name", "phone", "paymentMethod"];
-    for (const key of required) if (!String(data[key] || "").trim()) return NextResponse.json({ error: "請完整填寫所有必填欄位。" }, { status: 400 });
+    for (const key of ["date","product","size","pickupTime","name","phone","paymentMethod"]) if (!String(data[key]||"").trim()) return NextResponse.json({error:"請完整填寫所有必填欄位。"},{status:400});
+    const token=clean(process.env.LINE_CHANNEL_ACCESS_TOKEN), to=await getLineAdminUserId();
+    if(!token) return NextResponse.json({error:"網站尚未設定 LINE Token。"},{status:500});
+    if(!to) return NextResponse.json({error:"店家 LINE 尚未綁定。請先在官方 LINE 聊天室輸入「綁定店家」。"},{status:500});
 
-    const token = String(process.env.LINE_CHANNEL_ACCESS_TOKEN || "").replace(/\s+/g, "").trim();
-    const to = await getLineAdminUserId();
-    if (!token) return NextResponse.json({ error: "網站尚未設定 LINE Token。" }, { status: 500 });
-    if (!to) return NextResponse.json({ error: "店家 LINE 尚未綁定。請先在官方 LINE 聊天室輸入「綁定店家」。" }, { status: 500 });
+    const orderId=await nextOrderId();
+    const paymentLabel=data.paymentMethod==="bank"?"銀行轉帳匯款":"現場付款（現金）";
+    const order={orderId,date:String(data.date).trim(),pickupTime:String(data.pickupTime).trim(),product:String(data.product).trim(),size:String(data.size).trim(),occasion:String(data.occasion||"").trim(),paymentMethod:data.paymentMethod,paymentLabel,name:String(data.name).trim(),phone:String(data.phone).trim(),lineName:String(data.lineName||"").trim(),note:String(data.note||"").trim(),status:"待付款",createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+    const saved=await saveOrder(order);
+    if(!saved) return NextResponse.json({error:"訂單後台尚未完成設定，請稍後再試。"},{status:500});
 
-    const orderId = createOrderId();
-    const paymentLabel = data.paymentMethod === "bank" ? "銀行匯款（待確認）" : "現場付款（現金）";
-    const text = [
-      "🎂 初甜趣｜網站新訂單","────────────",`訂單編號：${orderId}`,`取貨日期：${String(data.date).trim()}`,`取貨時間：${String(data.pickupTime).trim()}`,`品項：${String(data.product).trim()}`,`尺寸：${String(data.size).trim()}`,`用途：${String(data.occasion || "未填").trim() || "未填"}`,`付款方式：${paymentLabel}`,`姓名：${String(data.name).trim()}`,`電話：${String(data.phone).trim()}`,`LINE 名稱：${String(data.lineName || "未填").trim() || "未填"}`,`備註：${String(data.note || "無").trim() || "無"}`,"────────────","請盡快與客人確認，確認後訂單才正式成立。"
-    ].join("\n");
-
-    const order = {
-      orderId,
-      date: String(data.date).trim(),
-      pickupTime: String(data.pickupTime).trim(),
-      product: String(data.product).trim(),
-      size: String(data.size).trim(),
-      occasion: String(data.occasion || "").trim(),
-      paymentMethod: data.paymentMethod,
-      paymentLabel,
-      name: String(data.name).trim(),
-      phone: String(data.phone).trim(),
-      lineName: String(data.lineName || "").trim(),
-      note: String(data.note || "").trim(),
-      status: data.paymentMethod === "bank" ? "待匯款" : "待確認",
-      createdAt: new Date().toISOString()
-    };
-    const lineResponse = await fetch("https://api.line.me/v2/bot/message/push", { method:"POST", headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`}, body:JSON.stringify({to,messages:[{type:"text",text}]}), cache:"no-store" });
-    const lineBody = await lineResponse.text();
-    if (!lineResponse.ok) {
-      console.error("LINE push failed", lineResponse.status, lineBody);
-      if (lineResponse.status === 401) return NextResponse.json({ error: "LINE Token 無效或已失效，請重新發行後更新 Vercel。" }, { status: 502 });
-      if (lineResponse.status === 400) return NextResponse.json({ error: "LINE User ID 不正確，或你尚未加入官方帳號好友。" }, { status: 502 });
-      return NextResponse.json({ error: `LINE 通知傳送失敗（${lineResponse.status}）。` }, { status: 502 });
-    }
-
-    let savedToBackend = false;
-    try {
-      savedToBackend = await saveOrder(order);
-    } catch (redisError) {
-      console.error("Redis save failed after LINE delivery", redisError);
-    }
-
-    return NextResponse.json({ ok: true, orderId, savedToBackend });
-  } catch (error) {
-    console.error("Order API error", error);
-    return NextResponse.json({ error: "訂單送出失敗，請稍後再試或直接電話聯絡店家。" }, { status: 500 });
-  }
+    const text=["🎂 初甜趣｜網站新訂單","────────────",`訂單編號：${orderId}`,`取貨日期：${order.date}`,`取貨時間：${order.pickupTime}`,`品項：${order.product}`,`尺寸：${order.size}`,`用途：${order.occasion||"未填"}`,`付款方式：${paymentLabel}`,`姓名：${order.name}`,`電話：${order.phone}`,`LINE 名稱：${order.lineName||"未填"}`,`備註：${order.note||"無"}`,"────────────","狀態：🟡 待付款","訂單不設匯款期限，也不會自動取消。"].join("\n");
+    const lineResponse=await fetch("https://api.line.me/v2/bot/message/push",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({to,messages:[{type:"text",text}]}),cache:"no-store"});
+    if(!lineResponse.ok) console.error("LINE admin push failed",lineResponse.status,await lineResponse.text());
+    return NextResponse.json({ok:true,orderId,savedToBackend:true});
+  } catch(error){console.error("Order API error",error);return NextResponse.json({error:"訂單送出失敗，請稍後再試或直接電話聯絡店家。"},{status:500});}
 }

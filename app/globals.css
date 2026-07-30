@@ -67,3 +67,11 @@ footer img{width:150px;height:auto;border-radius:12px;margin-bottom:12px}
 html{scroll-behavior:smooth}
 @media(max-width:900px){.hero-fixed-photo img{max-height:520px}.brand-title{font-size:22px}.brand-subtitle{font-size:9px}}
 @media(max-width:560px){.hero-fixed-photo img{max-height:none;border-radius:18px}.brand-title{font-size:20px}.brand-subtitle{font-size:8px;letter-spacing:.16em}.about-brand .brand-title{font-size:30px}}
+
+
+/* 2026-07-30 confirmed refinements */
+.brand-subtitle{font-size:7px;letter-spacing:.20em;margin-top:5px}
+.hero-fixed-photo{width:min(620px,100%);aspect-ratio:1/1;margin-inline:auto}
+.hero-fixed-photo img{width:100%;height:100%;max-height:none;object-fit:contain}
+@media(max-width:900px){.brand-subtitle{font-size:7px}.hero-fixed-photo{width:min(560px,100%)}}
+@media(max-width:560px){.brand-subtitle{font-size:7px;letter-spacing:.14em}.hero-fixed-photo{width:100%}}
