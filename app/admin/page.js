@@ -13,8 +13,21 @@ export default function Admin(){
   const [filter,setFilter]=useState("全部");
   const [msg,setMsg]=useState("");
   const [working,setWorking]=useState("");
+  const [authenticated,setAuthenticated]=useState(false);
 
-  useEffect(()=>{fetch("/api/settings").then(r=>r.json()).then(setData)},[]);
+  async function login(event){
+    event?.preventDefault();
+    setMsg("登入中…");
+    const r=await fetch("/api/admin/orders",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password})});
+    const j=await r.json();
+    if(!r.ok){setMsg(j.error||"登入失敗");return;}
+    const settingsResponse=await fetch("/api/settings",{cache:"no-store"});
+    const settings=await settingsResponse.json();
+    setData(settings);
+    setOrders(j.orders||[]);
+    setAuthenticated(true);
+    setMsg("");
+  }
   const updateList=(key,value)=>setData({...data,[key]:value.split(/\s*,\s*|\n+/).filter(Boolean)});
   const updateField=(key,value)=>setData({...data,[key]:value});
   async function save(){setMsg("儲存中…");const r=await fetch("/api/admin/settings",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password,settings:data})});const j=await r.json();setMsg(r.ok?"已儲存並同步到網站。":j.error||"儲存失敗");}
@@ -36,11 +49,18 @@ export default function Admin(){
       cancelled:orders.filter(o=>o.status==="已取消").length,
     };
   },[orders]);
+  if(!authenticated)return <main style={{maxWidth:460,margin:"80px auto",padding:"28px 20px",fontFamily:"Arial,sans-serif",color:"#4b382d"}}>
+    <h1>初甜趣網站後台</h1>
+    <form onSubmit={login} style={{display:"grid",gap:14,marginTop:24}}>
+      <label style={{display:"grid",gap:8}}>後台密碼<input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" style={{padding:12,border:"1px solid #d9c5b4",borderRadius:10}}/></label>
+      <button type="submit" style={{padding:"12px 18px",border:0,borderRadius:10,background:"#6d4939",color:"white",cursor:"pointer"}}>登入</button>
+    </form>
+    {msg&&<p style={{fontWeight:700,marginTop:16}}>{msg}</p>}
+  </main>;
   if(!data)return <main style={{padding:40}}>載入中…</main>;
 
   return <main className="admin">
     <h1>初甜趣網站後台</h1>
-    <label>後台密碼<input type="password" value={password} onChange={e=>setPassword(e.target.value)}/></label>
     <section><h2>首頁與客服</h2><label>首頁公告<input value={data.announcement||""} onChange={e=>updateField("announcement",e.target.value)} placeholder="例如：父親節檔期已滿單"/></label><label>LINE 官方帳號連結<input value={data.lineUrl||""} onChange={e=>updateField("lineUrl",e.target.value)} placeholder="https://lin.ee/xxxxxxx"/></label><label>客服回覆時間<input value={data.serviceHours||""} onChange={e=>updateField("serviceHours",e.target.value)}/></label><label>Google 地圖連結<input value={data.mapUrl||""} onChange={e=>updateField("mapUrl",e.target.value)}/></label><label>Google 評論連結<input value={data.reviewUrl||""} onChange={e=>updateField("reviewUrl",e.target.value)}/></label></section>
     <section><h2>匯款資訊</h2><div className="grid3"><input value={data.bankName||""} onChange={e=>updateField("bankName",e.target.value)} placeholder="銀行名稱"/><input value={data.bankCode||""} onChange={e=>updateField("bankCode",e.target.value)} placeholder="銀行代碼"/><input value={data.bankAccount||""} onChange={e=>updateField("bankAccount",e.target.value)} placeholder="匯款帳號"/></div><label>匯款提醒<textarea rows="3" value={data.bankNote||""} onChange={e=>updateField("bankNote",e.target.value)}/></label><p className="privacy">網站不顯示戶名；訂單不設定匯款期限，也不會自動取消。</p></section>
     <section><h2>行事曆</h2><label>滿單日期<textarea rows="7" value={data.closedDates.join("\n")} onChange={e=>updateList("closedDates",e.target.value)}/></label><label>剩少量日期<textarea rows="5" value={data.limitedDates.join("\n")} onChange={e=>updateList("limitedDates",e.target.value)}/></label></section>

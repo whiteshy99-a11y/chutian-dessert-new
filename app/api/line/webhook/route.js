@@ -19,7 +19,7 @@ export async function POST(req){
     if(text==="綁定店家"&&userId){const saved=await redis(["set","chutian:line-admin-user-id",userId]);await reply(event.replyToken,saved?"初甜趣店家 LINE 已綁定成功。之後網站有新訂單，會傳送通知到這個聊天室。":"已收到綁定指令，但網站尚未設定 Upstash Redis。");continue;}
     const match=text.toUpperCase().match(/CT\d{12}/);
     if(match&&userId){
-      try{const order=await bindLineUser(match[0],userId);await reply(event.replyToken,`已成功配對訂單 ${order.orderId}。\n匯款完成後，請直接在這裡上傳付款截圖；店家確認款項後，LINE 會自動通知您訂單成立。\n本訂單沒有匯款期限，也不會自動取消。`);}catch{await reply(event.replyToken,"找不到這筆訂單，請確認訂單編號是否輸入正確。");}
+      try{const order=await bindLineUser(match[0],userId);await reply(event.replyToken,`已成功配對訂單 ${order.orderId}。\n匯款完成後，請直接在這裡上傳付款截圖；店家確認款項後，LINE 會自動通知您訂單成立。`);}catch{await reply(event.replyToken,"找不到這筆訂單，請確認訂單編號是否輸入正確。");}
       continue;
     }
     if(type==="image"&&userId){
