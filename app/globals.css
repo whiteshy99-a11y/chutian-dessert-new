@@ -94,3 +94,9 @@ html{scroll-behavior:smooth}
 .bank-card small{display:block!important;margin-top:12px!important;line-height:1.8!important;color:#6f5a4d!important}
 @media(max-width:900px){.hero-photo{grid-template-columns:1fr!important;padding-left:7vw!important;padding-right:7vw!important}.hero-fixed-photo{width:min(680px,100%)!important}.brand-subtitle{font-size:7px!important}}
 @media(max-width:560px){.hero-fixed-photo{width:100%!important}.brand-subtitle{font-size:6px!important;letter-spacing:.13em!important}}
+
+
+/* 2026-08-02 正式版：Hero 大張正方形，填滿框面且不拉伸 */
+.hero-fixed-photo{overflow:hidden!important;background:transparent!important}
+.hero-fixed-photo img{object-fit:cover!important;object-position:center!important}
+

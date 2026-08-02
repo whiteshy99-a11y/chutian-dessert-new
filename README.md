@@ -17,3 +17,12 @@
 
 ## Upstash Redis
 未串接 Redis 時，網站仍可送出 LINE 通知，但後台設定與訂單不會永久儲存。
+
+
+## 正式訂單資料庫設定（Vercel）
+程式同時支援以下任一方式：
+
+1. `REDIS_URL`：從 Upstash Console 複製 `rediss://default:...` 連線字串（推薦，僅需一個變數）。
+2. `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`：REST API 連線。
+
+新增環境變數後必須重新部署。可開啟 `/api/system-status` 確認 `redisConfigured` 與 `redisReachable` 都是 `true`。

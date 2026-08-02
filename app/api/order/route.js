@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { nextOrderId, saveOrder } from "../../../lib/orders";
-import { getRedisEnv } from "../../../lib/redis-env";
+import { nextOrderId, saveOrder, redis } from "../../../lib/orders";
 
 function clean(value) {
   return String(value || "").replace(/\s+/g, "").trim();
@@ -9,20 +8,9 @@ function clean(value) {
 async function getLineAdminUserId() {
   const direct = clean(process.env.LINE_ADMIN_USER_ID);
   if (direct) return direct;
-
-  const { url, token: redisToken, configured } = getRedisEnv();
-  if (!configured) return "";
-
   try {
-    const response = await fetch(
-      `${url}/get/${encodeURIComponent("chutian:line-admin-user-id")}`,
-      {
-        headers: { Authorization: `Bearer ${redisToken}` },
-        cache: "no-store",
-      },
-    );
-    const body = await response.json();
-    return String(body?.result || "").trim();
+    const result = await redis(["get", "chutian:line-admin-user-id"]);
+    return String(result?.result || "").trim();
   } catch {
     return "";
   }
