@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { nextOrderId, saveOrder } from "../../../lib/orders";
+import { getRedisEnv } from "../../../lib/redis-env";
 
 function clean(value){return String(value || "").replace(/\s+/g, "").trim()}
 async function getLineAdminUserId(){
   const direct = clean(process.env.LINE_ADMIN_USER_ID);
   if (direct) return direct;
-  const url = String(process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || "").trim().replace(/\/+$/, "");
-  const redisToken = String(process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || "").trim();
-  if (!url || !redisToken) return "";
+  const { url, token: redisToken, configured } = getRedisEnv();
+  if (!configured) return "";
   try { const r=await fetch(`${url}/get/${encodeURIComponent("chutian:line-admin-user-id")}`,{headers:{Authorization:`Bearer ${redisToken}`},cache:"no-store"}); const j=await r.json(); return String(j?.result||"").trim(); } catch { return ""; }
 }
 
@@ -20,7 +20,7 @@ export async function POST(req) {
     const paymentLabel="銀行轉帳匯款";
     const order={orderId,date:String(data.date).trim(),pickupTime:String(data.pickupTime).trim(),product:String(data.product).trim(),size:String(data.size).trim(),occasion:String(data.occasion||"").trim(),paymentMethod:"bank",paymentLabel,name:String(data.name).trim(),phone:String(data.phone).trim(),lineName:String(data.lineName||"").trim(),note:String(data.note||"").trim(),status:"待付款",createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
     const saved=await saveOrder(order);
-    if(!saved) return NextResponse.json({error:"訂單後台尚未完成設定，請稍後再試。"},{status:500});
+    if(!saved) return NextResponse.json({error:"訂單資料庫尚未連線。請店家確認 Vercel 的 Upstash Redis 環境變數後重新部署。"},{status:503});
 
     const text=["🎂 初甜趣｜網站新訂單","────────────",`訂單編號：${orderId}`,`取貨日期：${order.date}`,`取貨時間：${order.pickupTime}`,`品項：${order.product}`,`尺寸：${order.size}`,`用途：${order.occasion||"未填"}`,`付款方式：${paymentLabel}`,`姓名：${order.name}`,`電話：${order.phone}`,`LINE 名稱：${order.lineName||"未填"}`,`備註：${order.note||"無"}`,"────────────","狀態：🟡 待付款","訂單不設匯款期限，也不會自動取消。"].join("\n");
     if(token&&to){

@@ -82,3 +82,15 @@ html{scroll-behavior:smooth}
 .form-error{padding:13px 15px;border:1px solid #e1b8b3;border-radius:12px;background:#fff0ee;color:#8a3f38;line-height:1.7}
 .order-success{text-align:center;padding:12px 4px 6px}.success-icon{width:58px;height:58px;margin:0 auto 16px;border-radius:50%;display:grid;place-items:center;background:#edf7ef;color:#4e7852;font-size:30px;font-weight:800}.order-success h2{margin:10px 0 12px}.order-success>p{line-height:1.8}.order-number{margin:24px 0;padding:18px;border:1px solid #dfc8b5;border-radius:16px;background:#fffaf5;display:grid;gap:7px}.order-number span{font-size:13px;color:#806b60}.order-number strong{font-family:Arial,sans-serif;font-size:24px;letter-spacing:.06em;color:#5a4032}.success-steps{text-align:left;margin:18px 0;padding:18px 20px;border-radius:16px;background:#f8efe7}.success-steps p{margin:8px 0;line-height:1.7}.success-steps b{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#8b684f;color:white;margin-right:8px}.success-reminder{text-align:left;border-left:4px solid #c7a461;padding:12px 15px;background:#fffaf0;line-height:1.8}.line-success{display:block;margin-top:20px;padding:16px 20px;border-radius:999px;background:#06c755;color:white!important;font-weight:900;text-decoration:none!important;box-shadow:0 8px 22px #06c75533}
 @media(max-width:560px){.dialog{padding:28px 20px}.order-number strong{font-size:20px}.two{grid-template-columns:1fr}}
+
+
+/* 2026-08-02 final carry-over fixes */
+.brand-subtitle{font-size:7px!important;line-height:1.2!important;letter-spacing:.18em!important;margin-top:4px!important;font-weight:700!important}
+.hero-photo{grid-template-columns:minmax(360px,.72fr) minmax(520px,1.28fr)!important;gap:4vw!important;padding-left:6vw!important;padding-right:6vw!important}
+.hero-fixed-photo{width:min(760px,100%)!important;aspect-ratio:1/1!important;margin-inline:auto!important}
+.hero-fixed-photo img{width:100%!important;height:100%!important;object-fit:contain!important;object-position:center!important;border-radius:28px!important}
+.faq details p{display:block!important;visibility:visible!important;opacity:1!important;margin:14px 0 0!important}
+.payment-summary strong{font-size:17px!important}
+.bank-card small{display:block!important;margin-top:12px!important;line-height:1.8!important;color:#6f5a4d!important}
+@media(max-width:900px){.hero-photo{grid-template-columns:1fr!important;padding-left:7vw!important;padding-right:7vw!important}.hero-fixed-photo{width:min(680px,100%)!important}.brand-subtitle{font-size:7px!important}}
+@media(max-width:560px){.hero-fixed-photo{width:100%!important}.brand-subtitle{font-size:6px!important;letter-spacing:.13em!important}}

@@ -75,7 +75,7 @@ export default function Home(){
 
       <section id="about" className="about"><div className="logo-mark brand-text about-brand"><span className="brand-title">✿ 初甜趣</span><span className="brand-subtitle">HANDMADE DESSERT · SINCE 2026</span></div><div><p className="eyebrow">ABOUT CHUTIAN</p><h2>奶油不甜膩，<br/>是我們的招牌。</h2><p>客人常說：「甜而不膩」、「奶油很綿密」、「奶香很濃郁」、「蛋糕體濕潤」。</p><p>初甜趣堅持使用動物性鮮奶油、不使用植物性鮮奶油，搭配新鮮水果、日本進口麵粉、嚴選茶粉與天然食材，以減糖配方完成每一份甜點。</p></div></section>
 
-      <section className="section faq" id="faq"><p className="eyebrow">ORDER INFORMATION</p><h2>訂購與取貨</h2><div className="faq-grid"><details><summary>取貨方式</summary><p>以門市自取為主。若有需要，可協助安排 Lalamove 配送，運費由顧客自行負擔。</p></details><details><summary>送出表單就代表訂單成立嗎？</summary><p>送出訂單後，請加入 LINE 客服並上傳付款截圖，經店家確認後訂單才會成立。</p></details><details><summary>客製蛋糕多久前預訂？</summary><p>客製道具需至少提前 14～30 個工作天預訂，並先透過官方 LINE 討論。</p></details><details><summary>付款方式</summary><p>銀行轉帳匯款</p></details></div></section>
+      <section className="section faq" id="faq"><p className="eyebrow">ORDER INFORMATION</p><h2>訂購與取貨</h2><div className="faq-grid"><details><summary>取貨方式</summary><p>門市自取為主，如有配送需求，可協助安排 Lalamove，運費由顧客自行負擔。</p></details><details><summary>送出表單就代表訂單成立嗎？</summary><p>送出訂單後，請加入 LINE 客服並上傳付款截圖，經店家確認後訂單才會成立。</p></details><details><summary>客製蛋糕多久前預訂？</summary><p>客製道具需至少提前 14～30 個工作天預訂，並先透過官方 LINE 討論主題、造型與報價。</p></details><details><summary>付款方式</summary><p>銀行轉帳匯款</p></details></div></section>
 
       <section id="contact" className="contact"><p className="eyebrow">CONTACT US</p><h2>把重要的日子，<br/>交給甜甜的我們。</h2><p><a href="tel:0976172288">0976-172-288</a>　高雄市鳳山區經武路353之1號</p><p className="service-hours">客服回覆時間：{settings.serviceHours}</p><p className="delivery-note">門市自取｜可協助安排 Lalamove，運費由顧客負擔</p><div className="contact-actions"><a className="primary" href="#calendar">查看可訂日期 →</a>{settings.lineUrl&&<a className="secondary" href={settings.lineUrl} target="_blank" rel="noreferrer">LINE 客服</a>}{settings.mapUrl&&<a className="secondary" href={settings.mapUrl} target="_blank" rel="noreferrer">Google 地圖導航</a>}</div></section>
     </main>
@@ -88,8 +88,8 @@ export default function Home(){
       <input type="hidden" name="productName" value={selectedProduct?.name||""}/>
       <div className="two"><label>用途<select name="occasion"><option>生日</option><option>彌月</option><option>節慶</option><option>公司活動</option><option>其他</option></select></label></div>
       <div className="two"><label>姓名<input name="name" required/></label><label>電話<input name="phone" inputMode="tel" required/></label></div><label>LINE 顯示名稱<input name="lineName" placeholder="方便店家核對聯絡"/></label>
-      <div className="payment-summary"><span>付款方式</span><strong>銀行匯款</strong></div>
-      <div className="bank-card"><h3>銀行匯款資訊</h3><p><b>銀行：</b>{settings.bankName}</p><p><b>代碼：</b>{settings.bankCode}</p><p><b>帳號：</b>{settings.bankAccount}</p><button type="button" className="copy-bank" onClick={()=>navigator.clipboard?.writeText(settings.bankAccount)}>複製帳號</button><small>送出訂單後，請加入 LINE 客服並上傳付款截圖，經店家確認後訂單才會成立。</small></div>
+      <div className="payment-summary"><span>付款方式</span><strong>銀行轉帳匯款</strong></div>
+      <div className="bank-card"><h3>銀行匯款資訊</h3><p><b>銀行：</b>{settings.bankName}</p><p><b>代碼：</b>{settings.bankCode}</p><p><b>帳號：</b>{settings.bankAccount}</p><button type="button" className="copy-bank" onClick={()=>navigator.clipboard?.writeText(settings.bankAccount)}>複製帳號</button><small>送出訂單後，請加入 LINE 客服並提供訂單編號、上傳付款截圖；經店家確認後訂單才會成立。匯款不設期限，訂單也不會自動取消。</small></div>
       <label>蛋糕文字／蠟燭／盤叉／其他備註<textarea name="note" rows="4"/></label><label className="agree"><input type="checkbox" required/>我了解送出後仍須由店家確認，才算正式成立訂單。</label>{message&&<div className="form-error">{message}</div>}<button className="primary submit" disabled={sending}>{sending?"傳送中…":"送出訂單"}</button>
     </form></>}</div></div>}
   </>
