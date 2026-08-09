@@ -8,7 +8,7 @@ const PRODUCTS = [
   {id:"fruit-basque",name:"水果焦香巴斯克（水果依季節搭配）",vegetarian:true,image:"/products/fruit-basque.jpeg",sizes:[{label:"6 吋",price:780}],ingredients:["焦香巴斯克乳酪蛋糕","當季新鮮水果","香緹鮮奶油"]},
   {id:"fruit-season",name:"水果季（水果依季節搭配）",vegetarian:true,image:"/products/fruit-season.jpeg",sizes:[{label:"4 吋",price:680},{label:"6 吋",price:850},{label:"8 吋",price:1250}],ingredients:["原味戚風蛋糕","當季新鮮水果","滑嫩布丁","香草外交官"]},
   {id:"blueberry-forest",name:"藍莓森林",vegetarian:true,image:"/products/blueberry-forest.jpeg",sizes:[{label:"4 吋",price:580},{label:"6 吋",price:780},{label:"8 吋",price:1180}],ingredients:["巧克力戚風蛋糕","手熬藍莓果醬","滑嫩布丁"]},
-  {id:"summer-mango",name:"夏日芒果",vegetarian:true,image:"/products/summer-mango.jpeg",sizes:[{label:"4 吋",price:680},{label:"6 吋",price:850},{label:"8 吋",price:1250}],ingredients:["原味戚風蛋糕","香草外交官醬","手熬草莓果醬","滑嫩布丁"]},
+  {id:"summer-mango",name:"夏日芒果",vegetarian:true,seasonalUnavailable:true,image:"/products/summer-mango.jpeg",sizes:[{label:"4 吋",price:680},{label:"6 吋",price:850},{label:"8 吋",price:1250}],ingredients:["原味戚風蛋糕","香草外交官醬","手熬草莓果醬","滑嫩布丁"]},
   {id:"saint-anna",name:"聖安娜焙茶",vegetarian:true,image:"/products/saint-anna.jpeg",sizes:[{label:"6 吋",price:850},{label:"8 吋",price:1250}],ingredients:["焙茶戚風蛋糕","無籽綠葡萄","滑嫩布丁"]},
   {id:"2d-cake",name:"二次元蛋糕",vegetarian:true,image:"/products/2d-cake.jpeg",sizes:[{label:"6 吋",price:880},{label:"8 吋",price:1280}],ingredients:["原味戚風蛋糕","手熬草莓果醬","滑嫩布丁"]},
   {id:"lemon-cake",name:"老奶奶檸檬糖霜蛋糕",vegetarian:true,image:"/products/lemon-cake.jpeg",sizes:[{label:"6 吋",price:380}],ingredients:["檸檬蛋糕","檸檬糖霜"]},
@@ -34,6 +34,11 @@ function money(n){return `NT$${Number(n).toLocaleString("zh-TW")}`}
 function priceText(p){return p.sizes.map(s=>`${s.label} ${money(s.price)}${s.suffix?` ${s.suffix}`:""}`).join("｜")}
 function dateKey(y,m,d){return `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`}
 
+const PICKUP_TIMES = Array.from({length:13},(_,i)=>{
+  const total=14*60+i*30;
+  return `${String(Math.floor(total/60)).padStart(2,"0")}:${String(total%60).padStart(2,"0")}`;
+});
+
 function Calendar({month, settings, selected, onSelect}) {
   const year=2026, first=new Date(year,month-1,1).getDay(), days=new Date(year,month,0).getDate();
   const cells=Array(first).fill(null).concat(Array.from({length:days},(_,i)=>i+1));
@@ -44,10 +49,10 @@ function Calendar({month, settings, selected, onSelect}) {
 }
 
 function ProductCard({p,onChoose}){
-  return <article className="product-card">
-    <div className="product-photo"><img src={p.image} alt={p.name}/>{p.vegetarian&&<span className="veg-tag">蛋奶素</span>}</div>
+  return <article className={`product-card ${p.seasonalUnavailable?"seasonal-unavailable":""}`}>
+    <div className="product-photo"><img src={p.image} alt={p.name}/>{p.vegetarian&&<span className="veg-tag">蛋奶素</span>}{p.seasonalUnavailable&&<><span className="seasonal-tag">季節限定</span><span className="seasonal-x" aria-hidden="true">×</span></>}</div>
     <div className="product-body"><h3>{p.name}</h3><p className="price-line">{priceText(p)}</p><ul>{p.ingredients.map(x=><li key={x}>{x}</li>)}</ul>
-    {p.custom?<a className="product-action" href="#contact">前往 LINE 討論 →</a>:<button className="product-action" onClick={()=>onChoose(p.id)}>選擇此品項 →</button>}</div>
+    {p.custom?<a className="product-action" href="#contact">前往 LINE 討論 →</a>:p.seasonalUnavailable?<span className="product-action product-unavailable">季節限定 ×</span>:<button className="product-action" onClick={()=>onChoose(p.id)}>選擇此品項 →</button>}</div>
   </article>
 }
 
@@ -83,8 +88,8 @@ export default function Home(){
     {settings.lineUrl&&<a className="line-float" href={settings.lineUrl} target="_blank" rel="noreferrer">LINE 客服</a>}
 
     {open&&<div className="modal" onMouseDown={e=>{if(e.target===e.currentTarget)setOpen(false)}}><div className="dialog"><button className="x" onClick={()=>setOpen(false)}>×</button>{orderId?<div className="order-success"><p className="success-icon">✓</p><p className="eyebrow">ORDER RECEIVED</p><h2>訂單已送出</h2><p>您的訂單資料已收到，請完成以下步驟。</p><div className="order-number"><span>訂單編號</span><strong>{orderId}</strong></div><div className="success-steps"><p><b>1.</b> 加入 LINE 官方帳號</p><p><b>2.</b> 提供訂單編號及匯款截圖</p><p><b>3.</b> 經店家確認款項後，訂單才正式成立</p></div><div className="success-reminder"><b>提醒您</b><br/>請截圖或記下訂單編號，方便店家核對。</div>{settings.lineUrl&&<a className="line-success" href={settings.lineUrl} target="_blank" rel="noreferrer">加入 LINE 官方帳號 →</a>}</div>:<><p className="eyebrow">ORDER FORM</p><h2>填寫訂購資料</h2><p className="selected-date">取貨日期：{selected}</p><form onSubmit={submit}>
-      <label>訂購品項<select name="product" value={productId} onChange={e=>setProductId(e.target.value)} required><option value="">請選擇</option>{PRODUCTS.filter(p=>!p.custom).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
-      <div className="two"><label>尺寸<select name="size" required><option value="">請選擇</option>{selectedProduct?.sizes.map(s=><option key={s.label} value={s.label}>{s.label}｜{money(s.price)}{s.suffix?` ${s.suffix}`:""}</option>)}</select></label><label>取貨時間<input name="pickupTime" type="time" required/></label></div>
+      <label>訂購品項<select name="product" value={productId} onChange={e=>setProductId(e.target.value)} required><option value="">請選擇</option>{PRODUCTS.filter(p=>!p.custom&&!p.seasonalUnavailable).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+      <div className="two"><label>尺寸<select name="size" required><option value="">請選擇</option>{selectedProduct?.sizes.map(s=><option key={s.label} value={s.label}>{s.label}｜{money(s.price)}{s.suffix?` ${s.suffix}`:""}</option>)}</select></label><label>取貨時間<select name="pickupTime" required><option value="">請選擇</option>{PICKUP_TIMES.map(t=><option key={t} value={t}>{t}</option>)}</select></label></div>
       <input type="hidden" name="productName" value={selectedProduct?.name||""}/>
       <div className="two"><label>用途<select name="occasion"><option>生日</option><option>彌月</option><option>節慶</option><option>公司活動</option><option>其他</option></select></label></div>
       <div className="two"><label>姓名<input name="name" required/></label><label>電話<input name="phone" inputMode="tel" required/></label></div><label>LINE 顯示名稱<input name="lineName" placeholder="方便店家核對聯絡"/></label>

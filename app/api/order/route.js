@@ -67,6 +67,19 @@ export async function POST(req) {
       }
     }
 
+    if (String(data.product || "").includes("夏日芒果")) {
+      return NextResponse.json({ error: "夏日芒果為季節限定，目前暫停訂購。" }, { status: 400 });
+    }
+
+    const pickupTime = String(data.pickupTime || "").trim();
+    const allowedPickupTimes = new Set(Array.from({ length: 13 }, (_, i) => {
+      const total = 14 * 60 + i * 30;
+      return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+    }));
+    if (!allowedPickupTimes.has(pickupTime)) {
+      return NextResponse.json({ error: "取貨時間僅開放 14:00～20:00。" }, { status: 400 });
+    }
+
     const orderId = await nextOrderId();
     const paymentLabel = "銀行轉帳匯款";
     const order = {
