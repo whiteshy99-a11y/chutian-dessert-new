@@ -14,6 +14,7 @@ export default function Admin(){
   const [msg,setMsg]=useState("");
   const [working,setWorking]=useState("");
   const [authenticated,setAuthenticated]=useState(false);
+  const [closedDatesText,setClosedDatesText]=useState("");
 
   async function login(event){
     event?.preventDefault();
@@ -24,24 +25,29 @@ export default function Admin(){
     const settingsResponse=await fetch("/api/settings",{cache:"no-store"});
     const settings=await settingsResponse.json();
     setData(settings);
+    setClosedDatesText((settings.closedDates||[]).join("\n"));
     setOrders(j.orders||[]);
     setAuthenticated(true);
     setMsg("");
   }
   const updateList=(key,value)=>setData({...data,[key]:value.split(/\s*,\s*|\n+/).filter(Boolean)});
   const updateField=(key,value)=>setData({...data,[key]:value});
-  const parseClosedDates=(value)=>[...new Set(value.split(/\n+/).map(v=>v.trim()).filter(v=>/^\d{4}-\d{2}-\d{2}$/.test(v)))].sort();
-  const updateClosedDates=(value)=>setData({...data,closedDates:parseClosedDates(value)});
-  async function saveClosedDates(nextDates=data.closedDates){
-    const nextData={...data,closedDates:[...new Set(nextDates)].sort()};
+  const parseClosedDates=(value)=>[...new Set(value.split(/\n+/).map(v=>v.trim()).filter(Boolean))].sort();
+  async function saveClosedDates(value=closedDatesText){
+    const entries=parseClosedDates(value);
+    const invalid=entries.filter(v=>!/^\d{4}-\d{2}-\d{2}$/.test(v));
+    if(invalid.length){setMsg(`日期格式錯誤：${invalid.join("、")}。請使用 YYYY-MM-DD，一行一個日期。`);return;}
+    const nextData={...data,closedDates:entries};
     setData(nextData);
+    setClosedDatesText(entries.join("\n"));
     setMsg("儲存滿單日期中…");
     const r=await fetch("/api/admin/settings",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password,settings:nextData})});
     const j=await r.json();
     setMsg(r.ok?"滿單日期已儲存並同步到網站。":j.error||"滿單日期儲存失敗");
   }
   async function removeClosedDate(date){
-    await saveClosedDates(data.closedDates.filter(d=>d!==date));
+    const nextDates=data.closedDates.filter(d=>d!==date);
+    await saveClosedDates(nextDates.join("\n"));
   }
   async function save(){setMsg("儲存中…");const r=await fetch("/api/admin/settings",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password,settings:data})});const j=await r.json();setMsg(r.ok?"已儲存並同步到網站。":j.error||"儲存失敗");}
   async function loadOrders(){setMsg("讀取訂單中…");const r=await fetch("/api/admin/orders",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password})});const j=await r.json();if(r.ok){setOrders(j.orders||[]);setMsg(`已讀取 ${j.orders?.length||0} 筆訂單。`)}else setMsg(j.error||"讀取失敗");}
@@ -78,7 +84,7 @@ export default function Admin(){
     <section><h2>匯款資訊</h2><div className="grid3"><input value={data.bankName||""} onChange={e=>updateField("bankName",e.target.value)} placeholder="銀行名稱"/><input value={data.bankCode||""} onChange={e=>updateField("bankCode",e.target.value)} placeholder="銀行代碼"/><input value={data.bankAccount||""} onChange={e=>updateField("bankAccount",e.target.value)} placeholder="匯款帳號"/></div><label>匯款提醒<textarea rows="3" value={data.bankNote||""} onChange={e=>updateField("bankNote",e.target.value)}/></label><p className="privacy">網站不顯示戶名；訂單不設定匯款期限，也不會自動取消。</p></section>
     <section><h2>行事曆</h2>
       <label>滿單日期（可一次輸入多天）
-        <textarea rows="7" value={data.closedDates.join("\n")} onChange={e=>updateClosedDates(e.target.value)} placeholder={"2026-08-19\n2026-08-20\n2026-08-21"}/>
+        <textarea rows="7" value={closedDatesText} onChange={e=>setClosedDatesText(e.target.value)} placeholder={"2026-08-19\n2026-08-20\n2026-08-21"}/>
       </label>
       <p className="calendar-help">請使用 <b>YYYY-MM-DD</b> 格式，<b>一行一個日期</b>；不用逗號、頓號或分號。</p>
       <button type="button" className="calendar-save" onClick={()=>saveClosedDates()}>儲存滿單日期</button>
