@@ -94,7 +94,7 @@ export default function Home(){
       <div className="two"><label>用途<select name="occasion"><option>生日</option><option>彌月</option><option>節慶</option><option>公司活動</option><option>其他</option></select></label></div>
       <div className="two"><label>姓名<input name="name" required/></label><label>電話<input name="phone" inputMode="tel" required/></label></div><label>LINE 顯示名稱<input name="lineName" placeholder="方便店家核對聯絡"/></label>
       <div className="payment-summary"><span>付款方式</span><strong>銀行轉帳匯款</strong></div>
-      <div className="bank-card"><h3>銀行匯款資訊</h3><p><b>銀行：</b>{settings.bankName}</p><p><b>代碼：</b>{settings.bankCode}</p><p><b>帳號：</b>{settings.bankAccount}</p><button type="button" className="copy-bank" onClick={()=>navigator.clipboard?.writeText(settings.bankAccount)}>複製帳號</button><small>送出訂單後，請加入 LINE 客服並提供訂單編號、上傳付款截圖；經店家確認後訂單才會成立。匯款不設期限，訂單也不會自動取消。</small></div>
+      <div className="bank-card"><h3>銀行匯款資訊</h3><p><b>銀行：</b>{settings.bankName}</p><p><b>代碼：</b>{settings.bankCode}</p><p><b>帳號：</b>{settings.bankAccount}</p><button type="button" className="copy-bank" onClick={()=>navigator.clipboard?.writeText(settings.bankAccount)}>複製帳號</button><small>送出訂單後，請加入 LINE 客服並提供訂單編號、上傳付款截圖；經店家確認後訂單才會成立。</small></div>
       <label>蛋糕文字／蠟燭／盤叉／其他備註<textarea name="note" rows="4"/></label><label className="agree"><input type="checkbox" required/>我了解送出後仍須由店家確認，才算正式成立訂單。</label>{message&&<div className="form-error">{message}</div>}<button className="primary submit" disabled={sending}>{sending?"傳送中…":"送出訂單"}</button>
     </form></>}</div></div>}
   </>
