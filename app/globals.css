@@ -109,7 +109,7 @@ html{scroll-behavior:smooth}
 
 /* 2026-08-10 requested visual tweaks only: hero title + header subtitle */
 header .brand-subtitle{font-size:13px!important}
-.hero-photo .hero-copy h1{font-size:clamp(40px,5vw,62px)!important}
+.hero-photo .hero-copy h1{font-size:clamp(40px,4.85vw,60px)!important}
 .hero-title-line2{white-space:nowrap}
 @media(max-width:900px){header .brand-subtitle{font-size:11px!important}.hero-title-line2{white-space:normal}}
 @media(max-width:560px){header .brand-subtitle{font-size:9px!important}.hero-photo .hero-copy h1{font-size:44px!important}}
