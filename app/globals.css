@@ -108,7 +108,8 @@ html{scroll-behavior:smooth}
 .product-unavailable{cursor:not-allowed;opacity:.78}
 
 /* 2026-08-10 requested visual tweaks only: hero title + header subtitle */
-header .brand-subtitle{font-size:calc(7px + .3cm)!important}
-.hero-photo .hero-copy h1{font-size:clamp(40px,5.2vw,66px)!important}
-@media(max-width:900px){header .brand-subtitle{font-size:calc(7px + .3cm)!important}}
-@media(max-width:560px){header .brand-subtitle{font-size:calc(6px + .3cm)!important}.hero-photo .hero-copy h1{font-size:44px!important}}
+header .brand-subtitle{font-size:13px!important}
+.hero-photo .hero-copy h1{font-size:clamp(40px,5vw,62px)!important}
+.hero-title-line2{white-space:nowrap}
+@media(max-width:900px){header .brand-subtitle{font-size:11px!important}.hero-title-line2{white-space:normal}}
+@media(max-width:560px){header .brand-subtitle{font-size:9px!important}.hero-photo .hero-copy h1{font-size:44px!important}}
