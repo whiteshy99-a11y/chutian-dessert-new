@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getOrders } from "../../../../lib/orders";
 import {
-  getOnsiteSales,
+  clientMonthData,
+  getOnsiteMonth,
+  getOnsiteProducts,
   saveDailyOnsiteSales,
   saveOnsiteProducts,
   summarizeOnsiteMonth,
@@ -24,13 +26,15 @@ function currentMonth() {
 
 async function payload(month) {
   const selectedMonth = /^\d{4}-\d{2}$/.test(String(month || "")) ? month : currentMonth();
-  const [sales, orders] = await Promise.all([getOnsiteSales(), getOrders()]);
-  const onsiteSummary = summarizeOnsiteMonth(sales, selectedMonth);
+  const products = await getOnsiteProducts();
+  const [monthData, orders] = await Promise.all([getOnsiteMonth(selectedMonth, products), getOrders()]);
+  const onsiteSummary = summarizeOnsiteMonth(monthData, products);
   const websiteSummary = summarizeWebsiteMonth(orders, selectedMonth);
+  const clientData = clientMonthData(monthData);
   return {
     month: selectedMonth,
-    products: sales.products,
-    daily: sales.daily,
+    products,
+    ...clientData,
     onsiteSummary,
     websiteSummary,
     totalRevenue: onsiteSummary.revenue + websiteSummary.revenue,
@@ -45,7 +49,9 @@ export async function POST(req) {
     }
     const action = String(body.action || "load");
     if (action === "saveProducts") await saveOnsiteProducts(body.products || []);
-    if (action === "saveDaily") await saveDailyOnsiteSales(String(body.date || ""), body.quantities || {});
+    if (action === "saveDaily") {
+      await saveDailyOnsiteSales(String(body.date || ""), body.quantities || {}, body.extras || []);
+    }
     return NextResponse.json(await payload(body.month));
   } catch (error) {
     return NextResponse.json({ error: error?.message || "現場銷售資料處理失敗。" }, { status: 500 });
