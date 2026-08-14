@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 const statusOptions=["全部","待付款","已付款","已取消"];
 const statusIcon={"待付款":"🟡","已付款":"🟢","已取消":"🔴"};
 function formatTaipei(value){if(!value)return "—";try{return new Intl.DateTimeFormat("zh-TW",{timeZone:"Asia/Taipei",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(value))}catch{return value}}
+function taipeiDate(){return new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Taipei",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date())}
+function taipeiMonth(){return taipeiDate().slice(0,7)}
+function money(value){return new Intl.NumberFormat("zh-TW",{style:"currency",currency:"TWD",maximumFractionDigits:0}).format(Number(value||0))}
 
 export default function Admin(){
   const [password,setPassword]=useState("");
@@ -15,6 +18,12 @@ export default function Admin(){
   const [working,setWorking]=useState("");
   const [authenticated,setAuthenticated]=useState(false);
   const [closedDatesText,setClosedDatesText]=useState("");
+  const [onsiteProducts,setOnsiteProducts]=useState([]);
+  const [onsiteDate,setOnsiteDate]=useState(taipeiDate());
+  const [onsiteQuantities,setOnsiteQuantities]=useState({});
+  const [revenueMonth,setRevenueMonth]=useState(taipeiMonth());
+  const [revenueData,setRevenueData]=useState(null);
+  const [salesWorking,setSalesWorking]=useState(false);
 
   async function login(event){
     event?.preventDefault();
@@ -29,6 +38,7 @@ export default function Admin(){
     setOrders(j.orders||[]);
     setAuthenticated(true);
     setMsg("");
+    await loadSales(password,revenueMonth);
   }
   const updateList=(key,value)=>setData({...data,[key]:value.split(/\s*,\s*|\n+/).filter(Boolean)});
   const updateField=(key,value)=>setData({...data,[key]:value});
@@ -58,6 +68,30 @@ export default function Admin(){
     if(r.ok){setOrders(current=>current.map(o=>o.orderId===orderId?j.order:o));setMsg(j.notification?.sent?`已更新為「${status}」，並已透過 LINE 通知客人。`:`已更新為「${status}」。${j.notification?.reason?`（${j.notification.reason}）`:""}`)}else setMsg(j.error||"更新失敗");
     setWorking("");
   }
+  async function loadSales(pwd=password,month=revenueMonth){
+    setSalesWorking(true);
+    const r=await fetch("/api/admin/onsite-sales",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password:pwd,action:"load",month})});
+    const j=await r.json();
+    if(r.ok){setRevenueData(j);setOnsiteProducts(j.products||[]);setOnsiteQuantities(j.daily?.[onsiteDate]||{});}else setMsg(j.error||"營收資料讀取失敗");
+    setSalesWorking(false);
+  }
+  async function saveOnsiteProducts(){
+    setSalesWorking(true);setMsg("儲存現場品項中…");
+    const r=await fetch("/api/admin/onsite-sales",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password,action:"saveProducts",products:onsiteProducts,month:revenueMonth})});
+    const j=await r.json();
+    if(r.ok){setRevenueData(j);setOnsiteProducts(j.products||[]);setOnsiteQuantities(j.daily?.[onsiteDate]||{});setMsg("現場小蛋糕品項已儲存。");}else setMsg(j.error||"品項儲存失敗");
+    setSalesWorking(false);
+  }
+  async function saveDailySales(){
+    setSalesWorking(true);setMsg("儲存今日現場銷售中…");
+    const r=await fetch("/api/admin/onsite-sales",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password,action:"saveDaily",date:onsiteDate,quantities:onsiteQuantities,month:revenueMonth})});
+    const j=await r.json();
+    if(r.ok){setRevenueData(j);setMsg(`${onsiteDate} 現場銷售已儲存。`);}else setMsg(j.error||"現場銷售儲存失敗");
+    setSalesWorking(false);
+  }
+  function changeOnsiteDate(date){setOnsiteDate(date);setOnsiteQuantities(revenueData?.daily?.[date]||{});}
+  async function changeRevenueMonth(month){setRevenueMonth(month);await loadSales(password,month);}
+  const onsiteTodayTotal=useMemo(()=>onsiteProducts.reduce((sum,p)=>sum+Number(onsiteQuantities[p.id]||0)*Number(p.price||0),0),[onsiteProducts,onsiteQuantities]);
   const filtered=useMemo(()=>orders.filter(o=>(filter==="全部"||o.status===filter)&&[o.orderId,o.name,o.phone,o.date,o.product,o.lineName].join(" ").toLowerCase().includes(query.toLowerCase())),[orders,query,filter]);
   const stats=useMemo(()=>{
     const today=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Taipei",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
@@ -97,6 +131,22 @@ export default function Admin(){
     <section><h2>商品</h2>{data.products.map((p,i)=><div className="product-row" key={p.id}><input value={p.name} onChange={e=>{const a=[...data.products];a[i]={...p,name:e.target.value};setData({...data,products:a})}}/><input value={p.desc} onChange={e=>{const a=[...data.products];a[i]={...p,desc:e.target.value};setData({...data,products:a})}}/><input value={p.price} onChange={e=>{const a=[...data.products];a[i]={...p,price:e.target.value};setData({...data,products:a})}}/><button type="button" className="danger" onClick={()=>setData({...data,products:data.products.filter((_,idx)=>idx!==i)})}>刪除</button></div>)}<button type="button" onClick={()=>setData({...data,products:[...data.products,{id:`product-${Date.now()}`,name:"新商品",desc:"商品介紹",price:"價格依尺寸與裝飾確認"}]})}>＋ 新增商品</button></section>
     <button className="primary" onClick={save}>儲存網站設定</button>
 
+    <section><h2>現場小蛋糕與每月營收</h2>
+      <p className="privacy">此區只會出現在後台，不會顯示在客人看到的官網。</p>
+      <div className="revenue-month-row"><label>查看月份<input type="month" value={revenueMonth} onChange={e=>changeRevenueMonth(e.target.value)}/></label><button type="button" onClick={()=>loadSales(password,revenueMonth)} disabled={salesWorking}>重新整理營收</button></div>
+      <div className="revenue-cards"><div><span>官網已付款</span><b>{money(revenueData?.websiteSummary?.revenue)}</b><small>{revenueData?.websiteSummary?.count||0} 筆訂單</small></div><div><span>現場小蛋糕</span><b>{money(revenueData?.onsiteSummary?.revenue)}</b><small>{revenueData?.onsiteSummary?.quantity||0} 個</small></div><div className="grand"><span>本月總營業額</span><b>{money(revenueData?.totalRevenue)}</b><small>官網＋現場</small></div></div>
+      {revenueData?.websiteSummary?.unpriced?.length>0&&<p className="revenue-warning">有 {revenueData.websiteSummary.unpriced.length} 筆已付款官網訂單無法自動辨識價格，未計入官網營收：{revenueData.websiteSummary.unpriced.join("、")}</p>}
+      <details className="onsite-config"><summary>現場小蛋糕品項設定（名稱＋單價只要設定一次）</summary>
+        <div className="onsite-products">{onsiteProducts.map((p,i)=><div className="onsite-product-row" key={p.id}><input value={p.name} onChange={e=>{const a=[...onsiteProducts];a[i]={...p,name:e.target.value};setOnsiteProducts(a)}} placeholder="品項名稱"/><input type="number" min="0" value={p.price} onChange={e=>{const a=[...onsiteProducts];a[i]={...p,price:Number(e.target.value||0)};setOnsiteProducts(a)}} placeholder="單價"/><button type="button" className={p.active===false?"":"danger"} onClick={()=>{const a=[...onsiteProducts];a[i]={...p,active:p.active===false};setOnsiteProducts(a)}}>{p.active===false?"恢復販售":"停用品項"}</button></div>)}</div>
+        <div className="onsite-config-actions"><button type="button" onClick={()=>setOnsiteProducts([...onsiteProducts,{id:`onsite-${Date.now()}`,name:"",price:0,active:true}])}>＋ 新增現場品項</button><button type="button" className="primary" onClick={saveOnsiteProducts} disabled={salesWorking}>儲存品項設定</button></div>
+      </details>
+      <div className="daily-sales"><div className="daily-sales-head"><label>銷售日期<input type="date" value={onsiteDate} onChange={e=>changeOnsiteDate(e.target.value)}/></label><div><span>當日現場營業額</span><b>{money(onsiteTodayTotal)}</b></div></div>
+        {onsiteProducts.filter(p=>p.active!==false).length===0?<p>請先在上方建立現場小蛋糕品項與單價。</p>:<div className="daily-product-list">{onsiteProducts.filter(p=>p.active!==false).map(p=><label className="daily-product" key={p.id}><span><b>{p.name}</b><small>單價 {money(p.price)}</small></span><input type="number" min="0" step="1" inputMode="numeric" value={onsiteQuantities[p.id]||""} onChange={e=>setOnsiteQuantities({...onsiteQuantities,[p.id]:Math.max(0,Number(e.target.value||0))})} placeholder="0"/><em>{money(Number(onsiteQuantities[p.id]||0)*Number(p.price||0))}</em></label>)}</div>}
+        <button type="button" className="primary" onClick={saveDailySales} disabled={salesWorking||onsiteProducts.filter(p=>p.active!==false).length===0}>儲存這一天的銷售數量</button>
+      </div>
+      {revenueData?.onsiteSummary?.byProduct?.length>0&&<details className="monthly-breakdown"><summary>{revenueMonth} 現場銷售明細</summary>{revenueData.onsiteSummary.byProduct.map(p=><p key={p.id}><span>{p.name}｜{p.quantity} 個</span><b>{money(p.revenue)}</b></p>)}</details>}
+    </section>
+
     <section><h2>訂單管理</h2>
       <div className="order-stats"><div><b>{stats.today}</b><span>今日訂單</span></div><div><b>{stats.pending}</b><span>🟡 待付款</span></div><div><b>{stats.paid}</b><span>🟢 已付款</span></div><div><b>{stats.cancelled}</b><span>🔴 已取消</span></div></div>
       <div className="toolbar"><button onClick={loadOrders}>讀取訂單</button><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜尋姓名、電話、LINE、日期或訂單編號"/></div>
@@ -114,7 +164,7 @@ export default function Admin(){
     </section>
     <p className="status">{msg}</p>
     <style jsx>{`
-      .admin{max-width:1000px;margin:auto;padding:42px 20px;font-family:Arial,sans-serif;color:#4b382d}section{background:#fffaf5;border:1px solid #eadbce;border-radius:18px;padding:20px;margin:22px 0}label{display:grid;gap:8px;margin:15px 0}input,textarea,select{padding:12px;border:1px solid #d9c5b4;border-radius:10px;background:white}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:8px 0}.product-row{display:grid;grid-template-columns:1fr 1.3fr 1fr auto;gap:8px;margin:8px 0}.danger{background:#f6e2de;color:#8f3f34;border:0;border-radius:10px;padding:10px}.privacy{font-size:13px;color:#806c5f}.status{font-weight:700;position:sticky;bottom:12px;background:#fff;padding:12px;border-radius:10px;box-shadow:0 5px 20px #0002}.order-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 18px}.order-stats>div{display:grid;gap:4px;text-align:center;padding:14px 8px;border-radius:12px;background:#f5ece4}.order-stats b{font-size:24px}.order-stats span{font-size:13px;color:#806c5f}.toolbar{display:grid;grid-template-columns:auto 1fr;gap:10px}.toolbar button,.primary,.filters button,.actions button{padding:12px 18px;border:0;border-radius:10px;cursor:pointer}.filters{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.filters button{background:#eee3d8}.filters button.on{background:#6d4939;color:white}.orders{display:grid;gap:12px;margin-top:16px}.orders article{background:white;border:1px solid #eadbce;border-radius:14px;padding:15px}.order-head{display:flex;justify-content:space-between;gap:10px}.order-head>div{display:flex;gap:10px;align-items:center}.badge{font-size:12px;padding:5px 9px;border-radius:999px;background:#f2ece6}.times{display:grid;gap:5px;color:#806c5f;font-size:13px;margin:12px 0}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions .paid{background:#dfeedd;color:#315b35}.actions .cancel{background:#f5dfdc;color:#8b3931}.actions button:disabled{opacity:.45;cursor:not-allowed}.orders p{margin:7px 0}.order-summary{font-size:15px}.order-detail{margin:12px 0;border-top:1px solid #eee0d4;padding-top:10px}.order-detail summary{cursor:pointer;font-weight:700;color:#6d4939}.detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}.detail-grid span{display:grid;gap:3px;padding:10px;border-radius:10px;background:#faf4ee;font-size:13px}.detail-grid b{font-size:12px;color:#806c5f}.calendar-help{font-size:13px;color:#806c5f;margin:-6px 0 12px}.calendar-save{padding:11px 16px;border:0;border-radius:10px;background:#6d4939;color:#fff;cursor:pointer}.closed-date-list{margin:16px 0 22px;padding:14px;border-radius:12px;background:#faf4ee}.closed-date-list>p{margin:10px 0 0;color:#806c5f}.closed-date-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #eadbce}.closed-date-item:last-child{border-bottom:0}.closed-date-item button{border:0;border-radius:9px;padding:7px 12px;background:#f5dfdc;color:#8b3931;cursor:pointer}@media(max-width:700px){.grid3,.toolbar,.product-row,.order-stats,.detail-grid{grid-template-columns:1fr}.order-head{display:grid}.actions button{width:100%}}
+      .admin{max-width:1000px;margin:auto;padding:42px 20px;font-family:Arial,sans-serif;color:#4b382d}section{background:#fffaf5;border:1px solid #eadbce;border-radius:18px;padding:20px;margin:22px 0}label{display:grid;gap:8px;margin:15px 0}input,textarea,select{padding:12px;border:1px solid #d9c5b4;border-radius:10px;background:white}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:8px 0}.product-row{display:grid;grid-template-columns:1fr 1.3fr 1fr auto;gap:8px;margin:8px 0}.danger{background:#f6e2de;color:#8f3f34;border:0;border-radius:10px;padding:10px}.privacy{font-size:13px;color:#806c5f}.status{font-weight:700;position:sticky;bottom:12px;background:#fff;padding:12px;border-radius:10px;box-shadow:0 5px 20px #0002}.order-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 18px}.order-stats>div{display:grid;gap:4px;text-align:center;padding:14px 8px;border-radius:12px;background:#f5ece4}.order-stats b{font-size:24px}.order-stats span{font-size:13px;color:#806c5f}.toolbar{display:grid;grid-template-columns:auto 1fr;gap:10px}.toolbar button,.primary,.filters button,.actions button{padding:12px 18px;border:0;border-radius:10px;cursor:pointer}.filters{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.filters button{background:#eee3d8}.filters button.on{background:#6d4939;color:white}.orders{display:grid;gap:12px;margin-top:16px}.orders article{background:white;border:1px solid #eadbce;border-radius:14px;padding:15px}.order-head{display:flex;justify-content:space-between;gap:10px}.order-head>div{display:flex;gap:10px;align-items:center}.badge{font-size:12px;padding:5px 9px;border-radius:999px;background:#f2ece6}.times{display:grid;gap:5px;color:#806c5f;font-size:13px;margin:12px 0}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions .paid{background:#dfeedd;color:#315b35}.actions .cancel{background:#f5dfdc;color:#8b3931}.actions button:disabled{opacity:.45;cursor:not-allowed}.orders p{margin:7px 0}.order-summary{font-size:15px}.order-detail{margin:12px 0;border-top:1px solid #eee0d4;padding-top:10px}.order-detail summary{cursor:pointer;font-weight:700;color:#6d4939}.detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}.detail-grid span{display:grid;gap:3px;padding:10px;border-radius:10px;background:#faf4ee;font-size:13px}.detail-grid b{font-size:12px;color:#806c5f}.calendar-help{font-size:13px;color:#806c5f;margin:-6px 0 12px}.calendar-save{padding:11px 16px;border:0;border-radius:10px;background:#6d4939;color:#fff;cursor:pointer}.closed-date-list{margin:16px 0 22px;padding:14px;border-radius:12px;background:#faf4ee}.closed-date-list>p{margin:10px 0 0;color:#806c5f}.closed-date-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #eadbce}.closed-date-item:last-child{border-bottom:0}.closed-date-item button{border:0;border-radius:9px;padding:7px 12px;background:#f5dfdc;color:#8b3931;cursor:pointer}.revenue-month-row{display:flex;align-items:end;gap:10px;flex-wrap:wrap}.revenue-month-row label{margin:0}.revenue-month-row button,.onsite-config-actions button{padding:11px 15px;border:0;border-radius:10px;cursor:pointer}.revenue-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.revenue-cards>div{display:grid;gap:5px;padding:16px;border-radius:14px;background:#f5ece4}.revenue-cards .grand{background:#6d4939;color:white}.revenue-cards b{font-size:25px}.revenue-cards small{opacity:.75}.revenue-warning{padding:11px 13px;border-radius:10px;background:#fff3cf;color:#775b18;font-size:13px}.onsite-config{border-top:1px solid #eadbce;border-bottom:1px solid #eadbce;padding:13px 0;margin:15px 0}.onsite-config summary,.monthly-breakdown summary{cursor:pointer;font-weight:700}.onsite-products{display:grid;gap:8px;margin:12px 0}.onsite-product-row{display:grid;grid-template-columns:1.5fr .7fr auto;gap:8px}.onsite-config-actions{display:flex;gap:8px;flex-wrap:wrap}.daily-sales{margin-top:18px;padding:16px;border-radius:14px;background:#faf4ee}.daily-sales-head{display:flex;justify-content:space-between;align-items:end;gap:15px}.daily-sales-head label{margin:0}.daily-sales-head>div{display:grid;text-align:right;gap:3px}.daily-sales-head b{font-size:24px}.daily-product-list{display:grid;gap:8px;margin:16px 0}.daily-product{display:grid;grid-template-columns:1fr 100px 120px;align-items:center;gap:10px;margin:0;padding:11px;border-radius:10px;background:white}.daily-product span{display:grid;gap:3px}.daily-product small{color:#806c5f}.daily-product input{text-align:center}.daily-product em{text-align:right;font-style:normal;font-weight:700}.monthly-breakdown{margin-top:15px}.monthly-breakdown p{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #eadbce}.monthly-breakdown p:last-child{border-bottom:0}@media(max-width:700px){.grid3,.toolbar,.product-row,.order-stats,.detail-grid,.revenue-cards,.onsite-product-row{grid-template-columns:1fr}.order-head{display:grid}.actions button{width:100%}.daily-sales-head{display:grid;align-items:stretch}.daily-sales-head>div{text-align:left}.daily-product{grid-template-columns:1fr 80px}.daily-product em{grid-column:1/-1;text-align:left}.revenue-month-row>*{width:100%}}
     `}</style>
   </main>
 }
