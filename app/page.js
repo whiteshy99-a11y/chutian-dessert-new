@@ -19,9 +19,10 @@ const PRODUCTS = [
   {id:"blueberry-chocolate-smile",name:"藍莓巧克力難哄（水果依季節搭配）",vegetarian:true,image:"/products/blueberry-chocolate-smile.jpeg",sizes:[{label:"4 吋",price:680},{label:"6 吋",price:980},{label:"8 吋",price:1280}],ingredients:["可可戚風蛋糕","手熬藍莓果醬","滑嫩布丁"]},
   {id:"mikan-earl-grey",name:"蜜柑伯爵奶凍焙茶",image:"/products/mikan-earl-grey.jpeg",sizes:[{label:"4 吋",price:580},{label:"6 吋",price:780},{label:"8 吋",price:1180}],ingredients:["焙茶戚風蛋糕","蜜柑果肉","伯爵奶凍"]},
   {id:"black-cherry-chocolate",name:"黑櫻桃巧克力裸蛋糕",vegetarian:true,image:"/products/black-cherry-chocolate.jpeg",sizes:[{label:"4 吋",price:680},{label:"6 吋",price:850},{label:"8 吋",price:1250}],ingredients:["可可戚風蛋糕","巧克力香緹","黑櫻桃","巧克力脆脆"]},
+  {id:"ganache-chocolate",name:"甘納許淋面巧克力",vegetarian:true,image:"/products/ganache-chocolate.jpg",sizes:[{label:"4 吋",price:680},{label:"6 吋",price:850},{label:"8 吋",price:1280}],ingredients:["70% 生巧克力","布丁","巧克力戚風蛋糕"]},
   {id:"fruit-naked",name:"水果裸蛋糕（水果依季節搭配）",vegetarian:true,image:"/products/fruit-naked.jpeg",sizes:[{label:"5 吋",price:798},{label:"7 吋",price:1288}],ingredients:["原味戚風蛋糕","當季水果","香緹鮮奶油","香草外交官奶醬"]},
   {id:"strawberry-chantilly",name:"草莓香緹",vegetarian:true,image:"/products/strawberry-chantilly.jpeg",sizes:[{label:"6 吋",price:780},{label:"8 吋",price:1180}],ingredients:["原味戚風蛋糕","手熬草莓果醬","滑嫩布丁"]},
-  {id:"custom-figure",name:"客製公仔蛋糕",custom:true,image:"/products/custom-1.jpeg",gallery:["/products/custom-1.jpeg","/products/custom-2.jpeg","/products/custom-3.jpeg","/products/custom-4.jpeg","/products/custom-5.jpeg","/products/custom-6.jpeg"],sizes:[{label:"6 吋（含公仔／道具）",price:1250,suffix:"起"},{label:"8 吋（含公仔／道具）",price:1550,suffix:"起"},{label:"6 吋（公仔自備）",price:880},{label:"8 吋（公仔自備）",price:1280}],ingredients:["內餡與主題請透過官方 LINE 討論","客製道具需提前 14～30 個工作天預訂"]}
+  {id:"custom-figure",name:"客製公仔蛋糕",custom:true,image:"/products/custom-1.jpeg",gallery:["/products/custom-1.jpeg","/products/custom-2.jpeg","/products/custom-3.jpeg","/products/custom-4.jpeg","/products/custom-5.jpeg","/products/custom-6.jpeg","/products/custom-7.jpg","/products/custom-8.jpg"],sizes:[{label:"6 吋（含公仔／道具）",price:1250,suffix:"起"},{label:"8 吋（含公仔／道具）",price:1550,suffix:"起"},{label:"6 吋（公仔自備）",price:880},{label:"8 吋（公仔自備）",price:1280}],ingredients:["內餡與主題請透過官方 LINE 討論","客製道具需提前 14～30 個工作天預訂"]}
 ];
 
 const defaultSettings = {
