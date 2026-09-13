@@ -14,13 +14,14 @@ const PRODUCTS = [
   {id:"lemon-cake",name:"老奶奶檸檬糖霜蛋糕",vegetarian:true,image:"/products/lemon-cake.jpeg",sizes:[{label:"6 吋",price:380}],ingredients:["檸檬蛋糕","檸檬糖霜"]},
   {id:"taro-flower",name:"芋泥小花",vegetarian:true,image:"/products/taro-flower.jpeg",sizes:[{label:"4 吋",price:580},{label:"6 吋",price:780},{label:"8 吋",price:1180},{label:"10 吋",price:1780},{label:"12 吋",price:2100}],ingredients:["原味戚風蛋糕","香甜芋泥","滑嫩布丁"]},
   {id:"green-grape-smile",name:"綠葡萄難哄",vegetarian:true,image:"/products/green-grape-smile.jpeg",sizes:[{label:"4 吋",price:580},{label:"6 吋",price:780},{label:"8 吋",price:1180}],ingredients:["原味戚風蛋糕","無籽綠葡萄","滑嫩布丁"]},
-  {id:"green-grape",name:"綠葡萄小清新",vegetarian:true,image:"/products/green-grape.jpeg",sizes:[{label:"4 吋",price:580},{label:"6 吋",price:780},{label:"8 吋",price:1180},{label:"10 吋",price:1780}],ingredients:["原味戚風蛋糕","無籽綠葡萄","滑嫩布丁","香草外交官"]},
+  {id:"green-grape",name:"綠葡萄小清新",vegetarian:true,image:"/products/green-grape.jpg",sizes:[{label:"4 吋",price:580},{label:"6 吋",price:780},{label:"8 吋",price:1180},{label:"10 吋",price:1780}],ingredients:["原味戚風蛋糕","無籽綠葡萄","滑嫩布丁","香草外交官"]},
   {id:"oreo-smile",name:"操灰搭",vegetarian:true,image:"/products/oreo-smile.jpeg",sizes:[{label:"4 吋",price:680},{label:"6 吋",price:980},{label:"8 吋",price:1280}],ingredients:["可可戚風蛋糕","手熬草莓果醬","滑嫩布丁"]},
   {id:"blueberry-chocolate-smile",name:"藍莓巧克力難哄（水果依季節搭配）",vegetarian:true,image:"/products/blueberry-chocolate-smile.jpeg",sizes:[{label:"4 吋",price:680},{label:"6 吋",price:980},{label:"8 吋",price:1280}],ingredients:["可可戚風蛋糕","手熬藍莓果醬","滑嫩布丁"]},
   {id:"mikan-earl-grey",name:"蜜柑伯爵奶凍焙茶",image:"/products/mikan-earl-grey.jpeg",sizes:[{label:"4 吋",price:580},{label:"6 吋",price:780},{label:"8 吋",price:1180}],ingredients:["焙茶戚風蛋糕","蜜柑果肉","伯爵奶凍"]},
   {id:"black-cherry-chocolate",name:"黑櫻桃巧克力裸蛋糕",vegetarian:true,image:"/products/black-cherry-chocolate.jpeg",sizes:[{label:"4 吋",price:680},{label:"6 吋",price:850},{label:"8 吋",price:1250}],ingredients:["可可戚風蛋糕","巧克力香緹","黑櫻桃","巧克力脆脆"]},
   {id:"ganache-chocolate",name:"甘納許淋面巧克力",vegetarian:true,image:"/products/ganache-chocolate.jpg",sizes:[{label:"4 吋",price:680},{label:"6 吋",price:850},{label:"8 吋",price:1280}],ingredients:["70% 生巧克力","布丁","巧克力戚風蛋糕"]},
   {id:"fruit-naked",name:"水果裸蛋糕（水果依季節搭配）",vegetarian:true,image:"/products/fruit-naked.jpeg",sizes:[{label:"5 吋",price:798},{label:"7 吋",price:1288}],ingredients:["原味戚風蛋糕","當季水果","香緹鮮奶油","香草外交官奶醬"]},
+  {id:"green-grape-naked",name:"綠葡萄裸蛋糕",vegetarian:true,image:"/products/green-grape-naked.jpg",sizes:[{label:"5 吋",price:798},{label:"7 吋",price:1280}],ingredients:["無籽綠葡萄","原味戚風蛋糕","香草蛋奶醬","香緹鮮奶油"]},
   {id:"strawberry-chantilly",name:"草莓香緹",vegetarian:true,image:"/products/strawberry-chantilly.jpeg",sizes:[{label:"6 吋",price:780},{label:"8 吋",price:1180}],ingredients:["原味戚風蛋糕","手熬草莓果醬","滑嫩布丁"]},
   {id:"custom-figure",name:"客製公仔蛋糕",custom:true,image:"/products/custom-1.jpeg",gallery:["/products/custom-1.jpeg","/products/custom-2.jpeg","/products/custom-3.jpeg","/products/custom-4.jpeg","/products/custom-5.jpeg","/products/custom-6.jpeg","/products/custom-7.jpg","/products/custom-8.jpg"],sizes:[{label:"6 吋（含公仔／道具）",price:1250,suffix:"起"},{label:"8 吋（含公仔／道具）",price:1550,suffix:"起"},{label:"6 吋（公仔自備）",price:880},{label:"8 吋（公仔自備）",price:1280}],ingredients:["內餡與主題請透過官方 LINE 討論","客製道具需提前 14～30 個工作天預訂"]}
 ];
@@ -44,7 +45,7 @@ function Calendar({month, settings, selected, onSelect}) {
   const year=2026, first=new Date(year,month-1,1).getDay(), days=new Date(year,month,0).getDate();
   const cells=Array(first).fill(null).concat(Array.from({length:days},(_,i)=>i+1));
   return <div className="calendar"><div className="week">{["日","一","二","三","四","五","六"].map(x=><b key={x}>{x}</b>)}</div><div className="days">{cells.map((d,i)=>{
-    if(!d)return <span key={`e${i}`}/>; const key=dateKey(year,month,d),closed=settings.closedDates.includes(key),limited=settings.limitedDates.includes(key),active=selected===key;
+    if(!d)return <span key={`e${i}`}/>; const key=dateKey(year,month,d),today=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Taipei",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date()),sameDay=key===today,closed=settings.closedDates.includes(key)||sameDay,limited=settings.limitedDates.includes(key),active=selected===key;
     return <button key={key} className={`${closed?"closed":limited?"limited":"open"} ${active?"active":""}`} disabled={closed} onClick={()=>onSelect(key)}>{d}</button>
   })}</div></div>
 }
@@ -71,7 +72,7 @@ export default function Home(){
       {settings.announcement&&<div className="announcement">📢 {settings.announcement}</div>}
       <section className="hero hero-photo"><div className="hero-copy"><p className="eyebrow">CHUTIAN BAKE · KAOHSIUNG</p><h1><span>每一口，</span><br/><span className="hero-title-line2">都是手作的溫度</span></h1><p className="lead">動物性鮮奶油、新鮮水果、日本進口麵粉與減糖配方。</p><a className="primary" href="#products">瀏覽商品 →</a><p className="note">奶油不甜膩，是客人最常給初甜趣的回饋。</p></div><div className="hero-fixed-photo"><img src="/products/fruit-season.jpeg" alt="水果季蛋糕"/></div></section>
 
-      <section id="calendar" className="section calendar-section"><p className="eyebrow">AVAILABLE DATES</p><h2>選擇取貨日期</h2><div className="months">{Object.keys(monthNames).map(m=><button key={m} className={month===Number(m)?"on":""} onClick={()=>setMonth(Number(m))}>{monthNames[m]}</button>)}</div><Calendar month={month} settings={settings} selected={selected} onSelect={chooseDate}/><div className="legend"><span><i className="dot open"/>可預訂</span><span><i className="dot limited"/>剩少量</span><span><i className="dot closed"/>已滿單</span></div><p className="hint">點選可預訂日期填寫訂購資料；灰色日期無法選擇。</p></section>
+      <section id="calendar" className="section calendar-section"><p className="eyebrow">AVAILABLE DATES</p><h2>選擇取貨日期</h2><div className="months">{Object.keys(monthNames).map(m=><button key={m} className={month===Number(m)?"on":""} onClick={()=>setMonth(Number(m))}>{monthNames[m]}</button>)}</div><Calendar month={month} settings={settings} selected={selected} onSelect={chooseDate}/><div className="legend"><span><i className="dot open"/>可預訂</span><span><i className="dot limited"/>剩少量</span><span><i className="dot closed"/>已滿單</span></div><p className="hint">點選可預訂日期填寫訂購資料；灰色日期無法選擇。當日急單請先洽官方 LINE 詢問，確認可接單後再由店家協助。</p>{settings.lineUrl&&<a className="product-action" href={settings.lineUrl} target="_blank" rel="noreferrer">LINE 詢問今日急單 →</a>}</section>
 
       <section className="features">{[["♨","動物性鮮奶油","不使用植物性鮮奶油"],["♧","嚴選食材","新鮮水果與日本進口麵粉"],["♢","減糖配方","保留食材原本的香氣"],["♡","小量手作","依訂單製作每一顆蛋糕"]].map(x=><article key={x[1]}><b>{x[0]}</b><h3>{x[1]}</h3><p>{x[2]}</p></article>)}</section>
 

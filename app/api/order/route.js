@@ -67,6 +67,13 @@ export async function POST(req) {
       }
     }
 
+    const taipeiToday = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(new Date());
+    if (String(data.date || "").trim() === taipeiToday) {
+      return NextResponse.json({ error: "當日急單請先洽官方 LINE 詢問，確認可接單後再由店家協助。" }, { status: 400 });
+    }
+
     if (String(data.product || "").includes("夏日芒果")) {
       return NextResponse.json({ error: "夏日芒果為季節限定，目前暫停訂購。" }, { status: 400 });
     }
