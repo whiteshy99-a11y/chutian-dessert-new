@@ -29,17 +29,25 @@ export default function Admin(){
   async function login(event){
     event?.preventDefault();
     setMsg("登入中…");
-    const r=await fetch("/api/admin/orders",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password})});
-    const j=await r.json();
-    if(!r.ok){setMsg(j.error||"登入失敗");return;}
-    const settingsResponse=await fetch("/api/settings",{cache:"no-store"});
-    const settings=await settingsResponse.json();
+    // 訂單、設定與本月營收平行載入，避免後台依序等待三次網路請求。
+    const [ordersResponse,settingsResponse,salesResponse]=await Promise.all([
+      fetch("/api/admin/orders",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password})}),
+      fetch("/api/settings",{cache:"no-store"}),
+      fetch("/api/admin/onsite-sales",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password,action:"load",month:revenueMonth})}),
+    ]);
+    const [ordersJson,settings,salesJson]=await Promise.all([ordersResponse.json(),settingsResponse.json(),salesResponse.json()]);
+    if(!ordersResponse.ok){setMsg(ordersJson.error||"登入失敗");return;}
     setData(settings);
     setClosedDatesText((settings.closedDates||[]).join("\n"));
-    setOrders(j.orders||[]);
+    setOrders(ordersJson.orders||[]);
+    if(salesResponse.ok){
+      setRevenueData(salesJson);
+      setOnsiteProducts(salesJson.products||[]);
+      setOnsiteQuantities(salesJson.daily?.[onsiteDate]||{});
+      setOnsiteExtras(salesJson.extrasByDate?.[onsiteDate]||[]);
+    }
     setAuthenticated(true);
-    setMsg("");
-    await loadSales(password,revenueMonth);
+    setMsg(salesResponse.ok?"":salesJson.error||"營收資料讀取失敗");
   }
   const updateList=(key,value)=>setData({...data,[key]:value.split(/\s*,\s*|\n+/).filter(Boolean)});
   const updateField=(key,value)=>setData({...data,[key]:value});
