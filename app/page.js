@@ -35,6 +35,16 @@ const defaultSettings = {
 function money(n){return `NT$${Number(n).toLocaleString("zh-TW")}`}
 function priceText(p){return p.sizes.map(s=>`${s.label} ${money(s.price)}${s.suffix?` ${s.suffix}`:""}`).join("｜")}
 function dateKey(y,m,d){return `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`}
+function taipeiBookingCutoff(){
+  const now=new Date();
+  const parts=Object.fromEntries(new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Taipei",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false,hourCycle:"h23"}).formatToParts(now).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));
+  const today=`${parts.year}-${parts.month}-${parts.day}`;
+  const tomorrowDate=new Date(`${today}T00:00:00+08:00`);
+  tomorrowDate.setUTCDate(tomorrowDate.getUTCDate()+1);
+  const tomorrow=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Taipei",year:"numeric",month:"2-digit",day:"2-digit"}).format(tomorrowDate);
+  const after20=Number(parts.hour)>=20;
+  return {today,tomorrow,after20};
+}
 
 const PICKUP_TIMES = Array.from({length:13},(_,i)=>{
   const total=14*60+i*30;
@@ -45,7 +55,7 @@ function Calendar({month, settings, selected, onSelect}) {
   const year=2026, first=new Date(year,month-1,1).getDay(), days=new Date(year,month,0).getDate();
   const cells=Array(first).fill(null).concat(Array.from({length:days},(_,i)=>i+1));
   return <div className="calendar"><div className="week">{["日","一","二","三","四","五","六"].map(x=><b key={x}>{x}</b>)}</div><div className="days">{cells.map((d,i)=>{
-    if(!d)return <span key={`e${i}`}/>; const key=dateKey(year,month,d),today=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Taipei",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date()),sameDay=key===today,closed=settings.closedDates.includes(key)||sameDay,limited=settings.limitedDates.includes(key),active=selected===key;
+    if(!d)return <span key={`e${i}`}/>; const key=dateKey(year,month,d),cutoff=taipeiBookingCutoff(),sameDay=key===cutoff.today,nextDayAfterCutoff=cutoff.after20&&key===cutoff.tomorrow,closed=settings.closedDates.includes(key)||sameDay||nextDayAfterCutoff,limited=settings.limitedDates.includes(key),active=selected===key;
     return <button key={key} className={`${closed?"closed":limited?"limited":"open"} ${active?"active":""}`} disabled={closed} onClick={()=>onSelect(key)}>{d}</button>
   })}</div></div>
 }
@@ -72,7 +82,7 @@ export default function Home(){
       {settings.announcement&&<div className="announcement">📢 {settings.announcement}</div>}
       <section className="hero hero-photo"><div className="hero-copy"><p className="eyebrow">CHUTIAN BAKE · KAOHSIUNG</p><h1><span>每一口，</span><br/><span className="hero-title-line2">都是手作的溫度</span></h1><p className="lead">動物性鮮奶油、新鮮水果、日本進口麵粉與減糖配方。</p><a className="primary" href="#products">瀏覽商品 →</a><p className="note">奶油不甜膩，是客人最常給初甜趣的回饋。</p></div><div className="hero-fixed-photo"><img src="/products/fruit-season.jpeg" alt="水果季蛋糕"/></div></section>
 
-      <section id="calendar" className="section calendar-section"><p className="eyebrow">AVAILABLE DATES</p><h2>選擇取貨日期</h2><div className="months">{Object.keys(monthNames).map(m=><button key={m} className={month===Number(m)?"on":""} onClick={()=>setMonth(Number(m))}>{monthNames[m]}</button>)}</div><Calendar month={month} settings={settings} selected={selected} onSelect={chooseDate}/><div className="legend"><span><i className="dot open"/>可預訂</span><span><i className="dot limited"/>剩少量</span><span><i className="dot closed"/>已滿單</span></div><p className="hint">點選可預訂日期填寫訂購資料；灰色日期無法選擇。當日急單請先洽官方 LINE 詢問，確認可接單後再由店家協助。</p>{settings.lineUrl&&<a className="product-action" href={settings.lineUrl} target="_blank" rel="noreferrer">LINE 詢問今日急單 →</a>}</section>
+      <section id="calendar" className="section calendar-section"><p className="eyebrow">AVAILABLE DATES</p><h2>選擇取貨日期</h2><div className="months">{Object.keys(monthNames).map(m=><button key={m} className={month===Number(m)?"on":""} onClick={()=>setMonth(Number(m))}>{monthNames[m]}</button>)}</div><Calendar month={month} settings={settings} selected={selected} onSelect={chooseDate}/><div className="legend"><span><i className="dot open"/>可預訂</span><span><i className="dot limited"/>剩少量</span><span><i className="dot closed"/>已滿單</span></div><p className="hint">點選可預訂日期填寫訂購資料；灰色日期無法選擇。當日訂單皆視為急單；每日晚上 8:00 後，隔日訂單也視為急單，請先洽官方 LINE 詢問。</p>{settings.lineUrl&&<a className="product-action" href={settings.lineUrl} target="_blank" rel="noreferrer">LINE 詢問急單 →</a>}</section>
 
       <section className="features">{[["♨","動物性鮮奶油","不使用植物性鮮奶油"],["♧","嚴選食材","新鮮水果與日本進口麵粉"],["♢","減糖配方","保留食材原本的香氣"],["♡","小量手作","依訂單製作每一顆蛋糕"]].map(x=><article key={x[1]}><b>{x[0]}</b><h3>{x[1]}</h3><p>{x[2]}</p></article>)}</section>
 

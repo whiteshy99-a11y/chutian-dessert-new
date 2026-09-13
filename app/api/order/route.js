@@ -67,11 +67,26 @@ export async function POST(req) {
       }
     }
 
-    const taipeiToday = new Intl.DateTimeFormat("en-CA", {
+    const now = new Date();
+    const taipeiParts = Object.fromEntries(
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", hour12: false, hourCycle: "h23",
+      }).formatToParts(now).filter(part => part.type !== "literal").map(part => [part.type, part.value]),
+    );
+    const taipeiToday = `${taipeiParts.year}-${taipeiParts.month}-${taipeiParts.day}`;
+    const tomorrowDate = new Date(`${taipeiToday}T00:00:00+08:00`);
+    tomorrowDate.setUTCDate(tomorrowDate.getUTCDate() + 1);
+    const taipeiTomorrow = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit",
-    }).format(new Date());
-    if (String(data.date || "").trim() === taipeiToday) {
-      return NextResponse.json({ error: "當日急單請先洽官方 LINE 詢問，確認可接單後再由店家協助。" }, { status: 400 });
+    }).format(tomorrowDate);
+    const requestedDate = String(data.date || "").trim();
+
+    if (requestedDate === taipeiToday) {
+      return NextResponse.json({ error: "當日訂單視為急單，請先洽官方 LINE 詢問，確認可接單後再由店家協助。" }, { status: 400 });
+    }
+    if (Number(taipeiParts.hour) >= 20 && requestedDate === taipeiTomorrow) {
+      return NextResponse.json({ error: "每日晚上 8:00 後，隔日訂單視為急單，請先洽官方 LINE 詢問。" }, { status: 400 });
     }
 
     if (String(data.product || "").includes("夏日芒果")) {
