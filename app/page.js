@@ -2,7 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-const monthNames = {7:"7 月",8:"8 月",9:"9 月",10:"10 月",11:"11 月",12:"12 月"};
+function taipeiCurrentMonth(){
+  const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Taipei",year:"numeric",month:"2-digit"}).formatToParts(new Date());
+  const get=k=>Number(parts.find(x=>x.type===k).value);
+  return {year:get("year"),month:get("month")};
+}
+function availableMonths(){
+  const {year,month}=taipeiCurrentMonth();
+  return Array.from({length:Math.max(0,(2027-year)*12+6-month+1)},(_,i)=>{const d=new Date(Date.UTC(year,month-1+i,1));return {key:`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}`,year:d.getUTCFullYear(),month:d.getUTCMonth()+1,label:`${d.getUTCFullYear()} 年 ${d.getUTCMonth()+1} 月`}});
+}
 
 const PRODUCTS = [
   {id:"fruit-basque",name:"水果焦香巴斯克（水果依季節搭配）",vegetarian:true,image:"/products/fruit-basque.jpeg",sizes:[{label:"6 吋",price:780}],ingredients:["焦香巴斯克乳酪蛋糕","當季新鮮水果","香緹鮮奶油"]},
@@ -53,11 +61,11 @@ const PICKUP_TIMES = Array.from({length:13},(_,i)=>{
   return `${String(Math.floor(total/60)).padStart(2,"0")}:${String(total%60).padStart(2,"0")}`;
 });
 
-function Calendar({month, settings, selected, onSelect}) {
-  const year=2026, first=new Date(year,month-1,1).getDay(), days=new Date(year,month,0).getDate();
+function Calendar({year,month, settings, selected, onSelect}) {
+  const first=new Date(year,month-1,1).getDay(), days=new Date(year,month,0).getDate();
   const cells=Array(first).fill(null).concat(Array.from({length:days},(_,i)=>i+1));
   return <div className="calendar"><div className="week">{["日","一","二","三","四","五","六"].map(x=><b key={x}>{x}</b>)}</div><div className="days">{cells.map((d,i)=>{
-    if(!d)return <span key={`e${i}`}/>; const key=dateKey(year,month,d),cutoff=taipeiBookingCutoff(),sameDay=key===cutoff.today,nextDayAfterCutoff=cutoff.after20&&key===cutoff.tomorrow,closed=settings.closedDates.includes(key)||sameDay||nextDayAfterCutoff,limited=settings.limitedDates.includes(key),active=selected===key;
+    if(!d)return <span key={`e${i}`}/>; const key=dateKey(year,month,d),cutoff=taipeiBookingCutoff(),sameDay=key===cutoff.today,nextDayAfterCutoff=cutoff.after20&&key===cutoff.tomorrow,closed=key<cutoff.today||settings.closedDates.includes(key)||sameDay||nextDayAfterCutoff,limited=settings.limitedDates.includes(key),active=selected===key;
     return <button key={key} className={`${closed?"closed":limited?"limited":"open"} ${active?"active":""}`} disabled={closed} onClick={()=>onSelect(key)}>{d}</button>
   })}</div></div>
 }
@@ -71,12 +79,15 @@ function ProductCard({p,onChoose}){
 }
 
 export default function Home(){
-  const [cakeBody,setCakeBody]=useState(""),[cakeSize,setCakeSize]=useState(""),[extraStrawberry,setExtraStrawberry]=useState(false),[month,setMonth]=useState(7),[settings,setSettings]=useState(defaultSettings),[selected,setSelected]=useState(""),[productId,setProductId]=useState(""),[open,setOpen]=useState(false),[sending,setSending]=useState(false),[message,setMessage]=useState(""),[orderId,setOrderId]=useState("");
+  const [cakeBody,setCakeBody]=useState(""),[cakeSize,setCakeSize]=useState(""),[extraStrawberry,setExtraStrawberry]=useState(false),[monthKey,setMonthKey]=useState(()=>{const {year,month}=taipeiCurrentMonth();return `${year}-${String(month).padStart(2,"0")}`}),[settings,setSettings]=useState(defaultSettings),[selected,setSelected]=useState(""),[productId,setProductId]=useState(""),[open,setOpen]=useState(false),[sending,setSending]=useState(false),[message,setMessage]=useState(""),[orderId,setOrderId]=useState("");
+  const months=availableMonths();
+  const activeMonth=months.find(m=>m.key===monthKey)||months[0];
+  useEffect(()=>{if(!months.some(m=>m.key===monthKey))setMonthKey(months[0].key)},[monthKey]);
   const selectedProduct=useMemo(()=>PRODUCTS.find(p=>p.id===productId),[productId]);
   const cakeBodyOptions=["原味戚風蛋糕","巧克力戚風蛋糕","焙茶戚風蛋糕"];
   const defaultCakeBody=selectedProduct?.ingredients?.find(x=>cakeBodyOptions.includes(x))||"";
   const chosenCakeBody=cakeBody||defaultCakeBody;
-  const strawberryExtraPrice=selectedProduct?.id==="strawberry-chantilly"?({"4 吋":50,"6 吋":100,"8 吋":150}[cakeSize]||0):0;
+  const strawberryExtraPrice=selectedProduct?.id==="strawberry-chantilly"?({"6 吋":100,"8 吋":150}[cakeSize]||0):0;
   const selectedBasePrice=selectedProduct?.sizes?.find(x=>x.label===cakeSize)?.price||0;
   useEffect(()=>{fetch("/api/settings").then(r=>r.json()).then(d=>setSettings({...defaultSettings,...d})).catch(()=>{});},[]);
   function chooseDate(key){setSelected(key);setOpen(true);setMessage("");setOrderId("")}
@@ -89,7 +100,7 @@ export default function Home(){
       {settings.announcement&&<div className="announcement">📢 {settings.announcement}</div>}
       <section className="hero hero-photo"><div className="hero-copy"><p className="eyebrow">CHUTIAN BAKE · KAOHSIUNG</p><h1><span>每一口，</span><br/><span className="hero-title-line2">都是手作的溫度</span></h1><p className="lead">動物性鮮奶油、新鮮水果、日本進口麵粉與減糖配方。</p><a className="primary" href="#products">瀏覽商品 →</a><p className="note">奶油不甜膩，是客人最常給初甜趣的回饋。</p></div><div className="hero-fixed-photo"><img src="/products/fruit-season.jpeg" alt="水果季蛋糕"/></div></section>
 
-      <section id="calendar" className="section calendar-section"><p className="eyebrow">AVAILABLE DATES</p><h2>選擇取貨日期</h2><div className="months">{Object.keys(monthNames).map(m=><button key={m} className={month===Number(m)?"on":""} onClick={()=>setMonth(Number(m))}>{monthNames[m]}</button>)}</div><Calendar month={month} settings={settings} selected={selected} onSelect={chooseDate}/><div className="legend"><span><i className="dot open"/>可預訂</span><span><i className="dot limited"/>剩少量</span><span><i className="dot closed"/>已滿單</span></div><p className="hint">點選可預訂日期填寫訂購資料；灰色日期無法選擇。當日訂單皆視為急單；每日晚上 8:00 後，隔日訂單也視為急單，請先洽官方 LINE 詢問。</p>{settings.lineUrl&&<a className="product-action" href={settings.lineUrl} target="_blank" rel="noreferrer">LINE 詢問急單 →</a>}</section>
+      <section id="calendar" className="section calendar-section"><p className="eyebrow">AVAILABLE DATES</p><h2>選擇取貨日期</h2><div className="months">{months.map(m=><button key={m.key} className={activeMonth.key===m.key?"on":""} onClick={()=>setMonthKey(m.key)}>{m.label}</button>)}</div><Calendar year={activeMonth.year} month={activeMonth.month} settings={settings} selected={selected} onSelect={chooseDate}/><div className="legend"><span><i className="dot open"/>可預訂</span><span><i className="dot limited"/>剩少量</span><span><i className="dot closed"/>已滿單</span></div><p className="hint">點選可預訂日期填寫訂購資料；灰色日期無法選擇。當日訂單皆視為急單；每日晚上 8:00 後，隔日訂單也視為急單，請先洽官方 LINE 詢問。</p>{settings.lineUrl&&<a className="product-action" href={settings.lineUrl} target="_blank" rel="noreferrer">LINE 詢問急單 →</a>}</section>
 
       <section className="features">{[["♨","動物性鮮奶油","不使用植物性鮮奶油"],["♧","嚴選食材","新鮮水果與日本進口麵粉"],["♢","減糖配方","保留食材原本的香氣"],["♡","小量手作","依訂單製作每一顆蛋糕"]].map(x=><article key={x[1]}><b>{x[0]}</b><h3>{x[1]}</h3><p>{x[2]}</p></article>)}</section>
 
