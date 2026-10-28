@@ -102,6 +102,17 @@ export async function POST(req) {
       return NextResponse.json({ error: "取貨時間僅開放 14:00～20:00。" }, { status: 400 });
     }
 
+    const cakeBodyOptions = ["原味戚風蛋糕", "巧克力戚風蛋糕", "焙茶戚風蛋糕"];
+    const cakeBody = String(data.cakeBody || "").trim();
+    if (!cakeBodyOptions.includes(cakeBody)) {
+      return NextResponse.json({ error: "請選擇有效的蛋糕體口味。" }, { status: 400 });
+    }
+    const extraStrawberry = data.extraStrawberry === true && data.product === "草莓香緹";
+    const extraPrice = extraStrawberry ? ({ "4 吋":50, "6 吋":100, "8 吋":150 }[String(data.size).trim()] || 0) : 0;
+    if (data.extraStrawberry === true && !extraPrice) {
+      return NextResponse.json({ error: "新鮮草莓內餡加購僅適用草莓香緹指定尺寸。" }, { status: 400 });
+    }
+
     const orderId = await nextOrderId();
     const paymentLabel = "銀行轉帳匯款";
     const order = {
@@ -110,6 +121,9 @@ export async function POST(req) {
       pickupTime: String(data.pickupTime).trim(),
       product: String(data.product).trim(),
       size: String(data.size).trim(),
+      cakeBody,
+      extraStrawberry,
+      extraStrawberryPrice: extraPrice,
       occasion: String(data.occasion || "").trim(),
       paymentMethod: "bank",
       paymentLabel,
@@ -144,6 +158,8 @@ export async function POST(req) {
       `取貨時間：${order.pickupTime}`,
       `品項：${order.product}`,
       `尺寸：${order.size}`,
+      `蛋糕體：${order.cakeBody}`,
+      `草莓內餡加購：${order.extraStrawberry ? `是（+$${order.extraStrawberryPrice}）` : "無"}`,
       `用途：${order.occasion || "未填"}`,
       `付款方式：${paymentLabel}`,
       `姓名：${order.name}`,

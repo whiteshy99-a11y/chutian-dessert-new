@@ -14,6 +14,7 @@ export default function Admin(){
   const [orders,setOrders]=useState([]);
   const [query,setQuery]=useState("");
   const [filter,setFilter]=useState("全部");
+  const [paperFilter,setPaperFilter]=useState("待登記");
   const [msg,setMsg]=useState("");
   const [working,setWorking]=useState("");
   const [authenticated,setAuthenticated]=useState(false);
@@ -77,6 +78,17 @@ export default function Admin(){
     if(r.ok){setOrders(current=>current.map(o=>o.orderId===orderId?j.order:o));setMsg(j.notification?.sent?`已更新為「${status}」，並已透過 LINE 通知客人。`:`已更新為「${status}」。${j.notification?.reason?`（${j.notification.reason}）`:""}`);await loadSales(password,revenueMonth);}else setMsg(j.error||"更新失敗");
     setWorking("");
   }
+  async function changePaper(orderId,registered){
+    setWorking(orderId);setMsg("儲存紙本登記狀態中…");
+    try {const r=await fetch("/api/admin/order-paper",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password,orderId,registered})});const j=await r.json();if(!r.ok)throw new Error(j.error||"儲存失敗");setOrders(current=>current.map(o=>o.orderId===orderId?j.order:o));setMsg(registered?"已標記為紙本已登記。":"已改回尚未登記。");}catch(e){setMsg(e.message||"更新失敗");}finally{setWorking("");}
+  }
+  async function deleteOrder(orderId){
+    if(!window.confirm(`確定永久刪除訂單 ${orderId}？刪除後無法復原。`))return;
+    const confirmation=window.prompt(`請輸入訂單編號 ${orderId}，再次確認永久刪除：`);
+    if(confirmation!==orderId){if(confirmation!==null)setMsg("訂單編號不符，未刪除。");return;}
+    setWorking(orderId);setMsg("刪除訂單中…");
+    try{const r=await fetch("/api/admin/order-delete",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password,orderId,confirmation})});const j=await r.json();if(!r.ok)throw new Error(j.error||"刪除失敗");setOrders(current=>current.filter(o=>o.orderId!==orderId));setMsg(`已永久刪除 ${orderId}。`);await loadSales(password,revenueMonth);}catch(e){setMsg(e.message||"刪除失敗");}finally{setWorking("");}
+  }
   async function loadSales(pwd=password,month=revenueMonth){
     setSalesWorking(true);
     const r=await fetch("/api/admin/onsite-sales",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({password:pwd,action:"load",month})});
@@ -120,7 +132,7 @@ export default function Admin(){
     for(const day of onsiteDays){const current=map.get(day.date)||{date:day.date,websiteRevenue:0,websiteCount:0,websiteOrders:[],onsiteRevenue:0,onsiteDay:null};current.onsiteRevenue=Number(day.revenue||0);current.onsiteDay=day;map.set(day.date,current);}
     return [...map.values()].map(row=>({...row,totalRevenue:row.websiteRevenue+row.onsiteRevenue})).sort((a,b)=>b.date.localeCompare(a.date));
   },[revenueData]);
-  const filtered=useMemo(()=>orders.filter(o=>(filter==="全部"||o.status===filter)&&[o.orderId,o.name,o.phone,o.date,o.product,o.lineName].join(" ").toLowerCase().includes(query.toLowerCase())),[orders,query,filter]);
+  const filtered=useMemo(()=>orders.filter(o=>(filter==="全部"||o.status===filter)&&(paperFilter==="全部"||(paperFilter==="待登記"?!o.paperRegistered:o.paperRegistered))&&[o.orderId,o.name,o.phone,o.date,o.product,o.lineName].join(" ").toLowerCase().includes(query.toLowerCase())),[orders,query,filter]);
   const stats=useMemo(()=>{
     const today=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Taipei",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
     return {
@@ -192,15 +204,16 @@ export default function Admin(){
       <div className="order-stats"><div><b>{stats.today}</b><span>今日訂單</span></div><div><b>{stats.pending}</b><span>🟡 待付款</span></div><div><b>{stats.paid}</b><span>🟢 已付款</span></div><div><b>{stats.cancelled}</b><span>🔴 已取消</span></div></div>
       <div className="toolbar"><button onClick={loadOrders}>讀取訂單</button><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜尋姓名、電話、LINE、日期或訂單編號"/></div>
       <div className="filters">{statusOptions.map(s=><button key={s} className={filter===s?"on":""} onClick={()=>setFilter(s)}>{s==="全部"?"全部訂單":`${statusIcon[s]} ${s}`}</button>)}</div>
-      {filtered.length===0?<p>尚未讀取訂單，或目前沒有符合條件的訂單。</p>:<div className="orders">{filtered.map(o=><article key={o.orderId}>
-        <div className="order-head"><div><b>{o.orderId}</b><span className={`badge ${o.status}`}>{statusIcon[o.status]} {o.status}</span></div><span>{o.date} {o.pickupTime}</span></div>
+      <div className="filters">{["全部","待登記","已登記"].map(s=><button key={s} className={paperFilter===s?"on":""} onClick={()=>setPaperFilter(s)}>{s==="待登記"?"● 尚未登記紙本":s==="已登記"?"✓ 已登記紙本":"全部紙本狀態"}</button>)}</div>
+      {filtered.length===0?<p>尚未讀取訂單，或目前沒有符合條件的訂單。</p>:<div className="orders">{filtered.map(o=><article key={o.orderId} style={o.paperRegistered?{opacity:.7}:{borderLeft:"4px solid #bf5547"}}>
+        <div className="order-head"><div><b>{o.orderId}</b><span className={`badge ${o.status}`}>{statusIcon[o.status]} {o.status}</span><span style={{fontWeight:700,color:o.paperRegistered?"#3d7654":"#aa4939"}}>{o.paperRegistered?"✓ 已登記紙本":"● 尚未登記"}</span></div><span>{o.date} {o.pickupTime}</span></div>
         <p className="order-summary"><strong>{o.name}</strong>｜{o.product}｜{o.size}</p>
         <details className="order-detail"><summary>查看完整訂單內容</summary>
-          <div className="detail-grid"><span><b>姓名</b>{o.name||"—"}</span><span><b>電話</b>{o.phone||"—"}</span><span><b>LINE 名稱</b>{o.lineName||"—"}</span><span><b>取貨日期</b>{o.date||"—"}</span><span><b>取貨時間</b>{o.pickupTime||"—"}</span><span><b>用途</b>{o.occasion||"—"}</span><span><b>商品</b>{o.product||"—"}</span><span><b>尺寸</b>{o.size||"—"}</span><span><b>付款方式</b>{o.paymentLabel||"銀行轉帳匯款"}</span></div>
+          <div className="detail-grid"><span><b>姓名</b>{o.name||"—"}</span><span><b>電話</b>{o.phone||"—"}</span><span><b>LINE 名稱</b>{o.lineName||"—"}</span><span><b>取貨日期</b>{o.date||"—"}</span><span><b>取貨時間</b>{o.pickupTime||"—"}</span><span><b>用途</b>{o.occasion||"—"}</span><span><b>商品</b>{o.product||"—"}</span><span><b>尺寸</b>{o.size||"—"}</span><span><b>蛋糕體</b>{o.cakeBody||"—"}</span><span><b>草莓內餡加購</b>{o.extraStrawberry?`新鮮草莓 +$${o.extraStrawberryPrice||0}`:"無"}</span><span><b>付款方式</b>{o.paymentLabel||"銀行轉帳匯款"}</span></div>
           <p><b>備註：</b>{o.note||"無"}</p><p><b>LINE 綁定：</b>{o.lineUserId?"已綁定，可自動通知客人":"尚未綁定；客人需先在官方 LINE 傳送訂單編號"}</p>
         </details>
         <div className="times"><span>建立時間：{formatTaipei(o.createdAt)}</span><span>付款確認時間：{formatTaipei(o.paymentConfirmedAt)}</span></div>
-        <div className="actions"><button className="paid" disabled={working===o.orderId||o.status==="已付款"} onClick={()=>changeStatus(o.orderId,"已付款")}>確認收到款項</button><button className="cancel" disabled={working===o.orderId||o.status==="已取消"} onClick={()=>changeStatus(o.orderId,"已取消")}>取消訂單</button>{o.status!=="待付款"&&<button disabled={working===o.orderId} onClick={()=>changeStatus(o.orderId,"待付款")}>恢復待付款</button>}</div>
+        <div className="actions"><button disabled={working===o.orderId} onClick={()=>changePaper(o.orderId,!o.paperRegistered)}>{o.paperRegistered?"↩ 改回尚未登記":"✓ 標記已登記紙本"}</button><button className="paid" disabled={working===o.orderId||o.status==="已付款"} onClick={()=>changeStatus(o.orderId,"已付款")}>確認收到款項</button><button className="cancel" disabled={working===o.orderId||o.status==="已取消"} onClick={()=>changeStatus(o.orderId,"已取消")}>取消訂單</button>{o.status!=="待付款"&&<button disabled={working===o.orderId} onClick={()=>changeStatus(o.orderId,"待付款")}>恢復待付款</button>}{o.status==="已取消"&&<button className="cancel" disabled={working===o.orderId} onClick={()=>deleteOrder(o.orderId)}>永久刪除此訂單</button>}</div>
       </article>)}</div>}
     </section>
     <p className="status">{msg}</p>
