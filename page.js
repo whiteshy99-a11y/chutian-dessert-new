@@ -72,7 +72,7 @@ function Calendar({year,month, settings, selected, onSelect}) {
 
 function ProductCard({p,onChoose}){
   return <article className={`product-card ${p.seasonalUnavailable?"seasonal-unavailable":""}`}>
-    <div className="product-photo"><img src={p.image} alt={p.name}/>{p.vegetarian&&<span className="veg-tag">蛋奶素</span>}{p.seasonalUnavailable&&<><span className="seasonal-tag">季節限定</span><span className="seasonal-x" aria-hidden="true">×</span></>}</div>
+    <div className="product-photo"><img src={p.image} alt={p.name}/>{(p.vegetarian || ["strawberry-garden", "strawberry-waterfall"].includes(p.id))&&<span className="veg-tag">蛋奶素</span>}{p.seasonalUnavailable&&<><span className="seasonal-tag">季節限定</span><span className="seasonal-x" aria-hidden="true">×</span></>}</div>
     <div className="product-body"><h3>{p.name}</h3><p className="price-line">{priceText(p)}</p><ul>{p.ingredients.map(x=><li key={x}>{x}</li>)}</ul>
     {p.custom?<a className="product-action" href="#contact">前往 LINE 討論 →</a>:p.seasonalUnavailable?<span className="product-action product-unavailable">季節限定 ×</span>:<button className="product-action" onClick={()=>onChoose(p.id)}>選擇此品項 →</button>}</div>
   </article>
