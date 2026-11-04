@@ -104,13 +104,14 @@ export async function POST(req) {
 
     const cakeBodyOptions = ["原味戚風蛋糕", "巧克力戚風蛋糕", "焙茶戚風蛋糕"];
     const cakeBody = String(data.cakeBody || "").trim();
-    if (!cakeBodyOptions.includes(cakeBody)) {
+    const noCakeBodyChoice = ["水果焦香巴斯克（水果依季節搭配）", "老奶奶檸檬糖霜蛋糕"].includes(String(data.product || "").trim());
+    if (!noCakeBodyChoice && !cakeBodyOptions.includes(cakeBody)) {
       return NextResponse.json({ error: "請選擇有效的蛋糕體口味。" }, { status: 400 });
     }
-    const extraStrawberry = data.extraStrawberry === true && data.product === "草莓香緹";
+    const extraStrawberry = data.extraStrawberry === true && ["草莓香緹", "二次元蛋糕"].includes(data.product);
     const extraPrice = extraStrawberry ? ({ "4 吋":50, "6 吋":100, "8 吋":150 }[String(data.size).trim()] || 0) : 0;
     if (data.extraStrawberry === true && !extraPrice) {
-      return NextResponse.json({ error: "新鮮草莓內餡加購僅適用草莓香緹指定尺寸。" }, { status: 400 });
+      return NextResponse.json({ error: "新鮮草莓內餡加購僅適用草莓香緹、二次元蛋糕的指定尺寸。" }, { status: 400 });
     }
 
     const orderId = await nextOrderId();
