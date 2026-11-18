@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { bindLineUser, getBoundOrderId, getOrder, redis } from "../../../../lib/orders";
+import { customerOrderLineMessage } from "../../../../lib/order-line-message";
 
 function clean(value){return String(value||"").trim().replace(/^['"]|['"]$/g,"").replace(/\/+$/,"")}
 function validSignature(raw,signature){const secret=clean(process.env.LINE_CHANNEL_SECRET);if(!secret||!signature)return false;const digest=crypto.createHmac("sha256",secret).update(raw).digest("base64");try{return crypto.timingSafeEqual(Buffer.from(digest),Buffer.from(signature))}catch{return false}}
@@ -19,7 +20,7 @@ export async function POST(req){
     if(text==="綁定店家"&&userId){const saved=await redis(["set","chutian:line-admin-user-id",userId]);await reply(event.replyToken,saved?"初甜趣店家 LINE 已綁定成功。之後網站有新訂單，會傳送通知到這個聊天室。":"已收到綁定指令，但網站尚未設定 Upstash Redis。");continue;}
     const match=text.toUpperCase().match(/CT\d{12}/);
     if(match&&userId){
-      try{const order=await bindLineUser(match[0],userId);await reply(event.replyToken,`已成功配對訂單 ${order.orderId}。\n\n💳 匯款資訊\n銀行：連線銀行\n銀行代碼：824\n匯款帳號：111018312187\n\n轉帳完成後，請直接將付款截圖上傳到這個 LINE 對話即可。\n店家確認款項後，LINE 會自動通知您訂單成立。`);}catch{await reply(event.replyToken,"找不到這筆訂單，請確認訂單編號是否輸入正確。");}
+      try{const existing=await getOrder(match[0]);if(!existing)throw new Error("找不到訂單");const alreadyBound=existing.lineUserId===userId;const order=await bindLineUser(match[0],userId);await reply(event.replyToken,alreadyBound?`訂單 ${order.orderId} 已配對成功。請直接上傳付款截圖，店家確認後會通知您。`:customerOrderLineMessage(order));}catch(error){console.error("LINE order binding error",error);await reply(event.replyToken,"無法配對這筆訂單，請確認訂單編號，或聯絡店家協助。");}
       continue;
     }
     if(type==="image"&&userId){

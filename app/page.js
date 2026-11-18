@@ -31,8 +31,8 @@ const PRODUCTS = [
   {id:"fruit-naked",name:"水果裸蛋糕（水果依季節搭配）",vegetarian:true,image:"/products/fruit-naked.jpeg",sizes:[{label:"5 吋",price:798},{label:"7 吋",price:1288}],ingredients:["原味戚風蛋糕","當季水果","香緹鮮奶油","香草外交官奶醬"]},
   {id:"green-grape-naked",name:"綠葡萄裸蛋糕",vegetarian:true,image:"/products/green-grape-naked.jpg",sizes:[{label:"5 吋",price:798},{label:"7 吋",price:1280}],ingredients:["無籽綠葡萄","原味戚風蛋糕","香草蛋奶醬","香緹鮮奶油"]},
   {id:"strawberry-chantilly",name:"草莓香緹",vegetarian:true,image:"/products/strawberry-chantilly.jpeg",sizes:[{label:"6 吋",price:780},{label:"8 吋",price:1180}],ingredients:["原味戚風蛋糕","手熬草莓果醬","滑嫩布丁"]},
-  {id:"strawberry-garden",name:"草莓花園",image:"/products/strawberry-garden.jpg",sizes:[{label:"6 吋",price:980},{label:"8 吋",price:1380}],ingredients:["原味戚風蛋糕","新鮮草莓","手熬草莓醬","香草蛋奶醬","滑嫩布丁"]},
-  {id:"strawberry-waterfall",name:"草莓瀑布",image:"/products/strawberry-waterfall.png",sizes:[{label:"6 吋",price:1250},{label:"8 吋",price:1680}],ingredients:["原味戚風蛋糕","兩層新鮮草莓","手熬草莓醬","香草蛋奶醬"]},
+  {id:"strawberry-smile",name:"草莓難哄",vegetarian:true,image:"/products/strawberry-smile.jpg",sizes:[{label:"4 吋",price:680},{label:"6 吋",price:880},{label:"8 吋",price:1280}],ingredients:["原味蛋糕","新鮮草莓","布丁","手熬草莓醬"]},
+  {id:"strawberry-waterfall",name:"草莓瀑布",vegetarian:true,image:"/products/strawberry-waterfall.png",sizes:[{label:"6 吋",price:1250},{label:"8 吋",price:1680}],ingredients:["原味戚風蛋糕","兩層新鮮草莓","手熬草莓醬","香草蛋奶醬"]},
   {id:"custom-figure",name:"客製公仔蛋糕",custom:true,image:"/products/custom-1.jpeg",gallery:["/products/custom-1.jpeg","/products/custom-2.jpeg","/products/custom-3.jpeg","/products/custom-4.jpeg","/products/custom-5.jpeg","/products/custom-6.jpeg","/products/custom-7.jpg","/products/custom-8.jpg"],sizes:[{label:"6 吋（含公仔／道具）",price:1250,suffix:"起"},{label:"8 吋（含公仔／道具）",price:1550,suffix:"起"},{label:"6 吋（公仔自備）",price:880},{label:"8 吋（公仔自備）",price:1280}],ingredients:["內餡與主題請透過官方 LINE 討論","客製道具需提前 14～30 個工作天預訂"]}
 ];
 

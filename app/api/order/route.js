@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { nextOrderId, saveOrder, redis } from "../../../lib/orders";
+import productPrices from "../../../lib/product-prices.json";
+import { orderLineDetails } from "../../../lib/order-line-message";
 
 function clean(value) {
   return String(value || "").replace(/\s+/g, "").trim();
@@ -89,6 +91,13 @@ export async function POST(req) {
       return NextResponse.json({ error: "每日晚上 8:00 後，隔日訂單視為急單，請先洽官方 LINE 詢問。" }, { status: 400 });
     }
 
+    // 與官網商品尺寸／價格一致；已下架的草莓花園不可再送單。
+    const productName = String(data.product || "").trim();
+    const productSize = String(data.size || "").trim();
+    if (!productPrices[productName] || !Object.prototype.hasOwnProperty.call(productPrices[productName], productSize)) {
+      return NextResponse.json({ error: "商品或尺寸已變更，請重新選擇訂購品項。" }, { status: 400 });
+    }
+
     if (String(data.product || "").includes("夏日芒果")) {
       return NextResponse.json({ error: "夏日芒果為季節限定，目前暫停訂購。" }, { status: 400 });
     }
@@ -155,18 +164,7 @@ export async function POST(req) {
       "🎂 初甜趣｜網站新訂單",
       "────────────",
       `訂單編號：${orderId}`,
-      `取貨日期：${order.date}`,
-      `取貨時間：${order.pickupTime}`,
-      `品項：${order.product}`,
-      `尺寸：${order.size}`,
-      `蛋糕體：${order.cakeBody}`,
-      `草莓內餡加購：${order.extraStrawberry ? `是（+$${order.extraStrawberryPrice}）` : "無"}`,
-      `用途：${order.occasion || "未填"}`,
-      `付款方式：${paymentLabel}`,
-      `姓名：${order.name}`,
-      `電話：${order.phone}`,
-      `LINE 名稱：${order.lineName || "未填"}`,
-      `備註：${order.note || "無"}`,
+      orderLineDetails(order),
       "────────────",
       "狀態：🟡 待付款",
       "訂單不設匯款期限，也不會自動取消。",
