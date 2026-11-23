@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 function taipeiCurrentMonth(){
   const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Taipei",year:"numeric",month:"2-digit"}).formatToParts(new Date());
@@ -80,6 +80,7 @@ function ProductCard({p,onChoose}){
 
 export default function Home(){
   const [cakeBody,setCakeBody]=useState(""),[cakeSize,setCakeSize]=useState(""),[extraStrawberry,setExtraStrawberry]=useState(false),[monthKey,setMonthKey]=useState(()=>{const {year,month}=taipeiCurrentMonth();return `${year}-${String(month).padStart(2,"0")}`}),[settings,setSettings]=useState(defaultSettings),[selected,setSelected]=useState(""),[productId,setProductId]=useState(""),[open,setOpen]=useState(false),[sending,setSending]=useState(false),[message,setMessage]=useState(""),[orderId,setOrderId]=useState("");
+  const pendingOrderRef = useRef(null);
   const months=availableMonths();
   const activeMonth=months.find(m=>m.key===monthKey)||months[0];
   useEffect(()=>{if(!months.some(m=>m.key===monthKey))setMonthKey(months[0].key)},[monthKey]);
@@ -91,9 +92,15 @@ export default function Home(){
   const strawberryExtraPrice=["strawberry-chantilly","2d-cake"].includes(selectedProduct?.id)?({"6 吋":100,"8 吋":150}[cakeSize]||0):0;
   const selectedBasePrice=selectedProduct?.sizes?.find(x=>x.label===cakeSize)?.price||0;
   useEffect(()=>{fetch("/api/settings").then(r=>r.json()).then(d=>setSettings({...defaultSettings,...d})).catch(()=>{});},[]);
-  function chooseDate(key){setSelected(key);setOpen(true);setMessage("");setOrderId("")}
+  function chooseDate(key){pendingOrderRef.current=null;setSelected(key);setOpen(true);setMessage("");setOrderId("")}
   function chooseProduct(id){setProductId(id);document.querySelector("#calendar")?.scrollIntoView({behavior:"smooth"})}
-  async function submit(e){e.preventDefault();const form=e.currentTarget;setSending(true);setMessage("");setOrderId("");const data=Object.fromEntries(new FormData(form).entries());try{const r=await fetch("/api/order",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...data,product:selectedProduct?.name||data.product,date:selected,paymentMethod:"bank",cakeBody:hasCakeBodyChoice?chosenCakeBody:"",extraStrawberry:strawberryExtraPrice>0&&extraStrawberry})});const result=await r.json().catch(()=>({}));if(!r.ok)throw new Error(result.error||(r.status>=500?"系統暫時無法建立訂單，請洽官方 LINE 協助。":"訂單資料未通過驗證，請確認填寫內容。"));setOrderId(result.orderId||"");form.reset();setProductId("");setCakeSize("");setCakeBody("");setExtraStrawberry(false)}catch(err){setMessage(err instanceof TypeError?"網路連線異常，請確認連線後重試；重送前請先向店家確認是否已收到訂單。":err instanceof Error?err.message:"訂單送出失敗，請洽官方 LINE 協助。") }finally{setSending(false)}}
+  async function submit(e){e.preventDefault();const form=e.currentTarget;setSending(true);setMessage("");setOrderId("");const data=Object.fromEntries(new FormData(form).entries());
+    const payload={...data,product:selectedProduct?.name||data.product,date:selected,paymentMethod:"bank",cakeBody:hasCakeBodyChoice?chosenCakeBody:"",extraStrawberry:strawberryExtraPrice>0&&extraStrawberry};
+    const fingerprint=JSON.stringify(payload);
+    if(!pendingOrderRef.current||pendingOrderRef.current.fingerprint!==fingerprint){
+      pendingOrderRef.current={fingerprint,requestId:crypto.randomUUID()};
+    }
+    try{const r=await fetch("/api/order",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...payload,requestId:pendingOrderRef.current.requestId})});const result=await r.json().catch(()=>({}));if(!r.ok)throw new Error(result.error||(r.status>=500?"系統暫時無法建立訂單，請洽官方 LINE 協助。":"訂單資料未通過驗證，請確認填寫內容。"));setOrderId(result.orderId||"");pendingOrderRef.current=null;form.reset();setProductId("");setCakeSize("");setCakeBody("");setExtraStrawberry(false)}catch(err){setMessage(err instanceof TypeError?"網路連線異常，請確認連線後重試；重送前請先向店家確認是否已收到訂單。":err instanceof Error?err.message:"訂單送出失敗，請洽官方 LINE 協助。") }finally{setSending(false)}}
 
   return <>
     <header><a className="brand brand-text" href="#top"><span className="brand-title">✿ 初甜趣</span><span className="brand-subtitle">HANDMADE DESSERT · SINCE 2024</span></a><nav><a href="#calendar">可訂日期</a><a href="#products">商品</a><a href="#custom">客製蛋糕</a><a href="#about">品牌故事</a><a href="#contact">聯絡我們</a></nav></header>
