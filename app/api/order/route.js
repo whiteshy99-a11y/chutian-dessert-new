@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { nextOrderId, saveOrder, redis } from "../../../lib/orders";
+import { nextOrderId, saveOrder, findOrderByRequestId, redis } from "../../../lib/orders";
 import productPrices from "../../../lib/product-prices.json";
 import { orderLineDetails } from "../../../lib/order-line-message";
 
@@ -123,6 +123,13 @@ export async function POST(req) {
       return NextResponse.json({ error: "新鮮草莓內餡加購僅適用草莓香緹、二次元蛋糕的指定尺寸。" }, { status: 400 });
     }
 
+    // 由同一張表單產生並重用的識別碼；遇到網路重試不會重複開單。
+    // 相容部署期間可能仍使用舊版前端的訪客。
+    // 舊版請求仍可下單，但沒有跨重送的去重能力。
+    const requestId = String(data.requestId || crypto.randomUUID()).trim();
+    if (!/^[a-zA-Z0-9-]{16,80}$/.test(requestId)) {
+      return NextResponse.json({ error: "請重新整理網頁後再送出訂單。" }, { status: 400 });
+    }
     const orderId = await nextOrderId();
     const paymentLabel = "銀行轉帳匯款";
     const order = {
@@ -146,16 +153,33 @@ export async function POST(req) {
       updatedAt: new Date().toISOString(),
     };
 
-    // 正式後台仍使用 Redis；但 Redis 尚未完成設定時，不再直接阻擋客人送單。
-    // 此時會先把完整訂單推送到店家 LINE，讓店家不會漏單。
-    let savedToBackend = false;
-    let storageError = "";
+    // 單一 Redis EVAL 原子寫入，避免「資料已存但清單未存」的半套訂單。
+    // Redis 已寫入但網路回應遺失時，使用 requestId 查回原單，不重複建立。
+    let saved;
     try {
-      savedToBackend = await saveOrder(order);
-      if (!savedToBackend) storageError = "Redis 尚未設定";
+      saved = await saveOrder(order, requestId);
     } catch (error) {
-      storageError = error instanceof Error ? error.message : "Redis 儲存失敗";
-      console.error("Order storage error", error);
+      console.error("Order atomic storage error", error);
+      try {
+        const recoveredId = await findOrderByRequestId(requestId);
+        if (recoveredId) saved = { orderId: recoveredId, created: false };
+      } catch (recoveryError) {
+        console.error("Order recovery lookup error", recoveryError);
+      }
+    }
+    if (!saved) {
+      return NextResponse.json(
+        { error: "無法確認訂單是否寫入，請先聯絡店家核對，避免重複下單。" },
+        { status: 503 },
+      );
+    }
+    // 重送時直接返回同一筆訂單編號，不再次觸發 LINE 推播。
+    if (!saved.created) {
+      return NextResponse.json({
+        ok: true, orderId: saved.orderId, status: "待付款",
+        savedToBackend: true, lineNotified: false,
+        warning: "已找到先前送出的相同訂單，沒有重複建立；請以後台訂單及 LINE 紀錄核對通知。",
+      });
     }
 
     const token = clean(process.env.LINE_CHANNEL_ACCESS_TOKEN);
@@ -163,39 +187,23 @@ export async function POST(req) {
     const text = [
       "🎂 初甜趣｜網站新訂單",
       "────────────",
-      `訂單編號：${orderId}`,
+      `訂單編號：${saved.orderId}`,
       orderLineDetails(order),
       "────────────",
       "狀態：🟡 待付款",
       "訂單不設匯款期限，也不會自動取消。",
-      savedToBackend
-        ? "✅ 已寫入網站訂單後台"
-        : "⚠️ 尚未寫入網站後台，請先依此 LINE 訊息保留訂單資料。",
+      "✅ 已寫入網站訂單後台",
     ].join("\n");
 
     const lineNotification = await pushAdminLine({ token, to, text });
 
-    // 至少必須成功寫入後台或成功通知店家，才向客人顯示送出成功。
-    if (!savedToBackend && !lineNotification.sent) {
-      return NextResponse.json(
-        {
-          error:
-            "訂單暫時無法送出。網站後台與店家 LINE 通知皆未連線，請直接聯絡店家。",
-          detail: [storageError, lineNotification.reason].filter(Boolean).join("；"),
-        },
-        { status: 503 },
-      );
-    }
-
     return NextResponse.json({
       ok: true,
-      orderId,
+      orderId: saved.orderId,
       status: "待付款",
-      savedToBackend,
+      savedToBackend: true,
       lineNotified: lineNotification.sent,
-      warning: savedToBackend
-        ? ""
-        : "訂單已傳送至店家 LINE；Redis 完成設定後才會同步顯示於網站後台。",
+      warning: lineNotification.sent ? "" : "訂單已儲存至網站後台，但店家 LINE 通知未送達。",
     });
   } catch (error) {
     console.error("Order API error", error);
