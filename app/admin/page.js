@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { openOrderPrint } from "../../lib/order-print";
 
 const statusOptions=["全部","待付款","已付款","已取消"];
 const statusIcon={"待付款":"🟡","已付款":"🟢","已取消":"🔴"};
@@ -167,7 +168,7 @@ export default function Admin(){
           <p><b>備註：</b>{o.note||"無"}</p><p><b>LINE 綁定：</b>{o.lineUserId?"已綁定，可自動通知客人":"尚未綁定；客人需先在官方 LINE 傳送訂單編號"}</p>
         </details>
         <div className="times"><span>建立時間：{formatTaipei(o.createdAt)}</span><span>付款確認時間：{formatTaipei(o.paymentConfirmedAt)}</span></div>
-        <div className="actions"><button disabled={working===o.orderId} onClick={()=>changePaper(o.orderId,!o.paperRegistered)}>{o.paperRegistered?"↩ 改回尚未登記":"✓ 標記已登記紙本"}</button><button className="paid" disabled={working===o.orderId||o.status==="已付款"} onClick={()=>changeStatus(o.orderId,"已付款")}>確認收到款項</button><button className="cancel" disabled={working===o.orderId||o.status==="已取消"} onClick={()=>changeStatus(o.orderId,"已取消")}>取消訂單</button>{o.status!=="待付款"&&<button disabled={working===o.orderId} onClick={()=>changeStatus(o.orderId,"待付款")}>恢復待付款</button>}{o.status==="已取消"&&<button className="cancel" disabled={working===o.orderId} onClick={()=>deleteOrder(o.orderId)}>永久刪除此訂單</button>}</div>
+        <div className="actions"><button type="button" onClick={()=>openOrderPrint(o)}>🖨 列印訂單</button><button disabled={working===o.orderId} onClick={()=>changePaper(o.orderId,!o.paperRegistered)}>{o.paperRegistered?"↩ 改回尚未登記":"✓ 標記已登記紙本"}</button><button className="paid" disabled={working===o.orderId||o.status==="已付款"} onClick={()=>changeStatus(o.orderId,"已付款")}>確認收到款項</button><button className="cancel" disabled={working===o.orderId||o.status==="已取消"} onClick={()=>changeStatus(o.orderId,"已取消")}>取消訂單</button>{o.status!=="待付款"&&<button disabled={working===o.orderId} onClick={()=>changeStatus(o.orderId,"待付款")}>恢復待付款</button>}{o.status==="已取消"&&<button className="cancel" disabled={working===o.orderId} onClick={()=>deleteOrder(o.orderId)}>永久刪除此訂單</button>}</div>
       </article>)}</div>}
     </section>
     <section><h2>首頁與客服</h2><label>首頁公告<input value={data.announcement||""} onChange={e=>updateField("announcement",e.target.value)} placeholder="例如：父親節檔期已滿單"/></label><label>LINE 官方帳號連結<input value={data.lineUrl||""} onChange={e=>updateField("lineUrl",e.target.value)} placeholder="https://lin.ee/xxxxxxx"/></label><label>客服回覆時間<input value={data.serviceHours||""} onChange={e=>updateField("serviceHours",e.target.value)}/></label><label>Google 地圖連結<input value={data.mapUrl||""} onChange={e=>updateField("mapUrl",e.target.value)}/></label><label>Google 評論連結<input value={data.reviewUrl||""} onChange={e=>updateField("reviewUrl",e.target.value)}/></label></section>
