@@ -163,9 +163,7 @@ export async function POST(req) {
     const text = [
       "🎂 初甜趣｜網站新訂單",
       "────────────",
-      `訂單編號：${orderId}`,
       orderLineDetails(order),
-      "────────────",
       "狀態：🟡 待付款",
       "訂單不設匯款期限，也不會自動取消。",
       savedToBackend
